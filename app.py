@@ -293,7 +293,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v12</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v13</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -332,7 +332,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <label>PNG size<select id="psz"><option value="1600x900">Large 1600x900</option><option value="1920x1080" selected>Extra large 1920x1080</option><option value="2560x1440">Huge 2560x1440</option></select></label>
 <label>Saved online<select id="slog"><option value="">Choose a saved log...</option></select></label>
 <label>Trade log CSV<input id="f" type="file" accept=".csv"></label>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v12</div></header>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v13</div></header>
 <main><div id="left"><div id="flt"></div><div id="list"><div class="it">Enter login, then choose your CSV.</div></div></div>
 <div id="right"><div id="bar"></div><div id="st"></div><div id="chart"></div><div id="det"></div><div id="note"></div><div id="sum" style="display:none"></div></div></main>
 <script>
@@ -342,10 +342,10 @@ const TFS={'1m':1,'5m':5,'15m':15,'30m':30,'1h':60},PAD={'1m':[90,30],'5m':[80,2
 let notes={},pn=true,sumOn=false,flt={res:'all',side:'all',day:'all',time:'all',sort:'t'},cs,csvName='trades',nS=0,nR=0,lastDir='',lastFile='',days={},tznote='',trades=[],sel=-1,tf='5m',chart,cache={};
 const st=(m,e)=>{$('st').textContent=m;$('st').className=e?'err':''};
 
-function csv(t){const o=[];let r=[],f='',q=false;
+function csv(t){t=t.replace(/^\uFEFF/,'');const fl=t.split(/\r?\n/)[0]||'',dl=[',',';','\t'].map(d=>[fl.split(d).length,d]).sort((a,b)=>b[0]-a[0])[0][1];const o=[];let r=[],f='',q=false;
  for(let i=0;i<t.length;i++){const c=t[i];
   if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=c}
-  else if(c=='"')q=true;else if(c==','){r.push(f);f=''}
+  else if(c=='"')q=true;else if(c==dl){r.push(f);f=''}
   else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;r.push(f);f='';o.push(r);r=[]}
   else f+=c}
  if(f||r.length){r.push(f);o.push(r)}return o.filter(x=>x.length>1)}
@@ -365,7 +365,7 @@ function parseTs(s,tz){s=s.trim();let Y,M,D,h,mi,sec,ap,z,m;
 function closedET(u){const o=off('America/New_York',u*1000),d=new Date((u+o)*1000),wd=d.getUTCDay(),h=d.getUTCHours();
  return wd==6||(wd==5&&h>=17)||(wd==0&&h<18)||(h==17&&wd>=1&&wd<=4)}
 function dayKey(u){const o=off('America/New_York',u*1000);let d=new Date((u+o)*1000);if(d.getUTCHours()>=18)d=new Date(d.getTime()+864e5);return d.toISOString().slice(0,10)}
-function load(text){const r=csv(text),H=r[0].map(x=>x.trim().toLowerCase()),ix=n=>H.indexOf(n),g=(w,n)=>ix(n)>=0?w[ix(n)]:'',nu=v=>v===''?NaN:+v;let mk;
+function load(text){const r=csv(text);if(!r.length)throw new Error('This file looks empty or has no header row. Export the trade log again as a CSV and try once more.');const H=r[0].map(x=>x.trim().toLowerCase()),ix=n=>H.indexOf(n),g=(w,n)=>ix(n)>=0?w[ix(n)]:'',nu=v=>v===''?NaN:+v;let mk;
  if(['enteredat','exitedat','entryprice','exitprice','type'].every(n=>ix(n)>=0))
   mk=tz=>r.slice(1).map(w=>({long:/long|buy/i.test(g(w,'type')),et:parseTs(g(w,'enteredat'),tz),xt:parseTs(g(w,'exitedat'),tz),ep:+g(w,'entryprice'),xp:+g(w,'exitprice'),pnl:nu(g(w,'pnl')),day:(/^\d{4}-\d\d-\d\d/.exec(g(w,'tradeday'))||[''])[0],sym:g(w,'contractname').trim(),size:g(w,'size'),fees:nu(g(w,'fees')),comm:nu(g(w,'commissions'))}));
  else if(['buyprice','sellprice','boughttimestamp','soldtimestamp'].every(n=>ix(n)>=0))
@@ -520,7 +520,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v12 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v13 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
