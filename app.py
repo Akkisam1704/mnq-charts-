@@ -187,6 +187,14 @@ def log_api(path, b):
         return {"ok": True}
     if path == "/api/log_list":
         return {"names": [k[4:] for k in kv_keys("log:")]}
+    if path == "/api/log_del":
+        kv_del("log:" + clean(b["name"]))
+        if b.get("notes"):
+            if DB_URL:
+                kv_del("notes:" + clean(b["name"]))
+            elif os.path.exists(notes_file({"folder": b["name"]})):
+                os.remove(notes_file({"folder": b["name"]}))
+        return {"ok": True}
     if path == "/api/log_get":
         return {"csv": kv_get("log:" + clean(b["name"]))}
     return {"error": "unknown"}
@@ -293,7 +301,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v13</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v15</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -310,6 +318,8 @@ main{display:flex;height:calc(100vh - 78px)}
 #bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 #list .dh{padding:8px 12px;background:#10151f;color:#aab2c5;font-size:12px;border-bottom:1px solid #232938;position:sticky;top:0}
 #chart{overflow:hidden;width:100%}
+#toast{display:none;position:fixed;right:16px;bottom:16px;max-width:430px;background:#1b2740;border:1px solid #2456c8;color:#dde1ea;padding:12px 14px;border-radius:8px;font-size:13px;z-index:50}
+.lr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-bottom:1px solid #1c2230;font-size:13px;color:#dde1ea}.ln{cursor:pointer;flex:1}.ln:hover{color:#4c8dff}.lx{cursor:pointer;color:#9aa3b8;padding:2px 8px;border-radius:4px}.lx:hover{background:#ef5350;color:#fff}
 @media(max-width:800px){main{flex-direction:column;height:auto}#left{width:auto;max-height:45vh}#right{padding:10px}#det{grid-template-columns:1fr}.cg{grid-template-columns:repeat(2,1fr)}header{padding:8px}#ver{display:none}.sr span:first-child{width:90px!important}}
 .mu{color:#9aa3b8;font-size:12px}.chip{padding:4px 10px;border:1px solid #2a3142;border-radius:14px;font-size:12px;cursor:pointer;background:#0f1218}.chip.on{background:#2456c8;border-color:#2456c8}
 #flt{padding:10px;border-bottom:1px solid #232938;display:flex;flex-direction:column;gap:8px}#flt .fg{display:grid;grid-template-columns:1fr 1fr;gap:6px}#flt select,#flt button{font-size:12px;padding:5px}
@@ -330,11 +340,11 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <label>Up<input id="cup" type="color"></label>
 <label>Down<input id="cdn" type="color"></label>
 <label>PNG size<select id="psz"><option value="1600x900">Large 1600x900</option><option value="1920x1080" selected>Extra large 1920x1080</option><option value="2560x1440">Huge 2560x1440</option></select></label>
-<label>Saved online<select id="slog"><option value="">Choose a saved log...</option></select></label>
+<div style="display:flex;flex-direction:column;font-size:11px;color:#8b93a7;gap:3px;position:relative">Saved online<button id="slogb" type="button" style="min-width:220px;text-align:left">Choose a saved log &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:30;top:100%;left:0;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:6px"></div></div>
 <label>Trade log CSV<input id="f" type="file" accept=".csv"></label>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v13</div></header>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v15</div></header>
 <main><div id="left"><div id="flt"></div><div id="list"><div class="it">Enter login, then choose your CSV.</div></div></div>
-<div id="right"><div id="bar"></div><div id="st"></div><div id="chart"></div><div id="det"></div><div id="note"></div><div id="sum" style="display:none"></div></div></main>
+<div id="right"><div id="bar"></div><div id="st"></div><div id="chart"></div><div id="det"></div><div id="note"></div><div id="sum" style="display:none"></div></div></main><div id="toast"></div>
 <script>
 const CLOUD=__CLOUD__;
 const $=id=>document.getElementById(id);
@@ -493,15 +503,39 @@ $('cup').oninput=$('cdn').oninput=()=>{$('cpre').value='';applyColors()};
 let sv=['#26a69a','#ef5350'];try{const x=(localStorage.cc||'').split(',');if(x.length==2)sv=x}catch(e){}
 $('cup').value=sv[0];$('cdn').value=sv[1];
 $('cpre').value=Object.keys(CP).find(k=>CP[k][0]==sv[0]&&CP[k][1]==sv[1])||'';
-async function openCsv(x,name){csvName=name;try{load(x);notes=await(await fetch('/api/notes_get',{method:'POST',body:JSON.stringify({folder:csvName})})).json();if(notes.error)notes={};flt={res:'all',side:'all',day:'all',time:'all',sort:'t'};sel=-1;renderList();st(trades.length+' trades loaded | Total net '+usd(trades.reduce((a,t)=>a+net(t),0))+' | '+tznote);if(trades.length)show(0)}catch(er){st(er.message,1)}}
-async function loadLogs(){try{const r=await(await fetch('/api/log_list',{method:'POST',body:'{}'})).json();$('slog').innerHTML='<option value="">Choose a saved log...</option>'+(r.names||[]).map(n=>`<option>${esc(n)}</option>`).join('')}catch(e){}}
+async function openCsv(x,name){csvName=name;try{load(x);notes=await(await fetch('/api/notes_get',{method:'POST',body:JSON.stringify({folder:csvName})})).json();if(notes.error)notes={};flt={res:'all',side:'all',day:'all',time:'all',sort:'t'};sel=-1;renderList();st(trades.length+' trades loaded | Total net '+usd(trades.reduce((a,t)=>a+net(t),0))+' | '+tznote);if(trades.length)show(0);return true}catch(er){st(er.message,1);return false}}
+let logNames=[];
+function renderLogs(){$('slogm').innerHTML=logNames.length?logNames.map((n,i)=>`<div class="lr"><span class="ln" onclick="pickLog(${i})">${esc(n)}</span><span class="lx" title="Delete this saved file" onclick="delLog(${i})">&#10005;</span></div>`).join(''):'<div class="lr mu">Nothing saved yet</div>'}
+async function loadLogs(){try{const r=await(await fetch('/api/log_list',{method:'POST',body:'{}'})).json();logNames=r.names||[];renderLogs()}catch(e){}}
+$('slogb').onclick=e=>{e.stopPropagation();const m=$('slogm');m.style.display=m.style.display=='block'?'none':'block'};
+$('slogm').onclick=e=>e.stopPropagation();document.addEventListener('click',()=>{$('slogm').style.display='none'});
+async function pickLog(i){$('slogm').style.display='none';const n=logNames[i];if(needLogin()){st('Enter username and API key first.',1);return}
+ const r=await(await fetch('/api/log_get',{method:'POST',body:JSON.stringify({name:n})})).json();if(r.csv)openCsv(r.csv,n);else st('Could not load that log',1)}
+async function delLog(i){const n=logNames[i];if(!confirm('Delete "'+n+'" from Saved online?'))return;const nt=confirm('Also delete the notes saved for "'+n+'"?\nOK = delete the notes too, Cancel = keep the notes.');
+ try{const r=await(await fetch('/api/log_del',{method:'POST',body:JSON.stringify({name:n,notes:nt})})).json();if(r.error)throw new Error(r.error);st('Deleted "'+n+'" from Saved online'+(nt?' (notes deleted too)':''));await loadLogs();$('slogm').style.display='block'}catch(e){st(e.message,1)}}
+let toastT;function toast(m){const e=$('toast');e.textContent=m;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',12000)}
+function tkeys(text){const r=csv(text);if(!r.length)return{hdr:[],rows:[],keys:[]};const H=r[0].map(x=>x.trim().toLowerCase()),
+ f=[['enteredat','exitedat','entryprice','exitprice'],['boughttimestamp','soldtimestamp','buyprice','sellprice']].find(a=>a.every(n=>H.includes(n)));
+ if(!f)return{hdr:r[0],rows:r.slice(1),keys:[]};const ix=f.map(n=>H.indexOf(n));
+ return{hdr:r[0],rows:r.slice(1),keys:r.slice(1).map(w=>ix.map(i=>(w[i]||'').trim()).join('|'))}}
+function toCsv(h,rows){const q=v=>/[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;return [h,...rows].map(r=>r.map(q).join(',')).join('\n')+'\n'}
+async function smartOpen(x,name){const nw=tkeys(x);let best=null,text=x,target=name,msg='';
+ if(nw.keys.length){try{await loadLogs();
+  const olds=await Promise.all(logNames.map(async n=>({n,csv:(await(await fetch('/api/log_get',{method:'POST',body:JSON.stringify({name:n})})).json()).csv||''})));
+  for(const o of olds){const t=tkeys(o.csv),set=new Set(t.keys),ov=nw.keys.filter(k=>set.has(k)).length;if(ov>0&&(!best||ov>best.ov||ov==best.ov&&o.n==name))best={n:o.n,ov,t}}
+  if(!best){const sm=olds.find(o=>o.n==name);if(sm)best={n:name,ov:0,t:tkeys(sm.csv)}}}catch(e){}
+  if(best){target=best.n;const lo=h=>JSON.stringify(h.map(v=>v.trim().toLowerCase()));
+   if(best.t.keys.length&&lo(nw.hdr)==lo(best.t.hdr)){const have=new Set(nw.keys),keep=best.t.rows.filter((w,i)=>!have.has(best.t.keys[i]));text=toCsv(nw.hdr,[...keep,...nw.rows]);
+    msg=`Updated saved log "${target}": ${nw.rows.length} trades from this file + ${keep.length} older trades kept.`}
+   else msg=`Updated saved log "${target}" with this file.`;
+   if(target!=name)msg=`This file has ${best.ov} trades already in "${target}", so I updated that one instead of adding a new file. `+msg}}
+ const ok=await openCsv(text,target);
+ if(ok&&trades.length){await fetch('/api/log_save',{method:'POST',body:JSON.stringify({name:target,csv:text})});await loadLogs();if(msg)toast(msg)}}
 const needLogin=()=>!CLOUD&&(!$('u').value||!$('k').value);
 if(CLOUD){$('u').parentNode.style.display='none';$('k').parentNode.style.display='none';$('lo').style.display='block'}
 $('f').onchange=e=>{const f=e.target.files[0];if(!f)return;
  if(needLogin()){st('Enter username and API key first, then pick the file again.',1);e.target.value='';return}
- f.text().then(async x=>{await openCsv(x,f.name.replace(/\.csv$/i,'')||'trades');fetch('/api/log_save',{method:'POST',body:JSON.stringify({name:csvName,csv:x})}).then(loadLogs)})};
-$('slog').onchange=async e=>{const n=e.target.value;if(!n)return;if(needLogin()){st('Enter username and API key first.',1);return}
- const r=await(await fetch('/api/log_get',{method:'POST',body:JSON.stringify({name:n})})).json();if(r.csv)openCsv(r.csv,n);else st('Could not load that log',1)};
+ f.text().then(async x=>{await smartOpen(x,f.name.replace(/\.csv$/i,'')||'trades')})};
 loadLogs();
 </script></body></html>"""
 
@@ -520,7 +554,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v13 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v15 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
