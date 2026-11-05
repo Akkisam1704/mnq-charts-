@@ -301,7 +301,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v17</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v18</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -345,7 +345,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <label>PNG size<select id="psz"><option value="1600x900">Large 1600x900</option><option value="1920x1080" selected>Extra large 1920x1080</option><option value="2560x1440">Huge 2560x1440</option></select></label>
 <div style="display:flex;flex-direction:column;font-size:11px;color:#8b93a7;gap:3px;position:relative">Saved online<button id="slogb" type="button" style="min-width:220px;text-align:left">Choose a saved log &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:30;top:100%;left:0;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:6px"></div></div>
 <label>Trade log CSV<input id="f" type="file" accept=".csv"></label>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v17</div></header>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v18</div></header>
 <main><div id="left"><div id="flt"></div><div id="list"><div class="it">Enter login, then choose your CSV.</div></div></div>
 <div id="right"><div id="bar"></div><div id="st"></div><div id="chart"></div><div id="det"></div><div id="note"></div><div id="sum" style="display:none"></div></div></main><div id="toast"></div>
 <script>
@@ -474,38 +474,42 @@ function gotoDay(d){flt.day=d;renderList();const v=view();if(v.length)show(v[0])
 function stats(v){const a=v.map(i=>trades[i]),nt=a.map(net),W=nt.filter(x=>x>0),L=nt.filter(x=>x<0),sm=x=>x.reduce((p,q)=>p+q,0),bd={},bt={},bs={},bh={},nyH=t=>{const o=off('America/New_York',t.et*1000);return new Date((t.et+o)*1000).getUTCHours()};
  a.forEach(t=>{const z=+t.size||1,hr=nyH(t);for(const [M,k] of [[bd,t.day],[bt,bucket(t)],[bs,z],[bh,hr+'|'+z]]){const o=M[k]??={n:0,w:0,s:0};o.n++;o.s+=net(t);if(net(t)>0){o.w++;o.sw=(o.sw||0)+net(t)}else if(net(t)<0){o.l=(o.l||0)+1;o.sl=(o.sl||0)+net(t)}}});
  return {n:a.length,net:sm(nt),wr:a.length?W.length/a.length:0,aw:W.length?sm(W)/W.length:0,al:L.length?sm(L)/L.length:0,pf:L.length?sm(W)/Math.abs(sm(L)):NaN,byDay:bd,byT:bt,bySize:bs,byHS:bh}}
-let scSel={d:'all',r:'full'};
+let scSel={d:'all',r:'auto',l:'stack',dot:true};
 const SBD=[['Overnight / Asia / London',0,930],['NY open',930,1020],['Midday',1020,1200],['NY afternoon',1200,1380]];
 function sessData(a){const o={};TB.forEach(b=>o[b]={n:0,w:0,sw:0,sl:0,s:0,z:0});a.forEach(t=>{const x=o[bucket(t)],v=net(t);x.n++;x.s+=v;x.z+=(+t.size||1);if(v>0){x.w++;x.sw+=v}else if(v<0)x.sl+=v});return o}
 const pfS=x=>x.sl<0?(x.sw/-x.sl).toFixed(2):(x.sw>0?'inf':'-');
 function etPos(sec){const o=off('America/New_York',sec*1000),d=new Date((sec+o)*1000),m=d.getUTCHours()*60+d.getUTCMinutes()+d.getUTCSeconds()/60;return m>=1080?m-1080:m>=1020?1380:m+360}
-function renderSession(){const box=$('scbox');if(!box)return;const dsel=$('scd').value||'all',us=$('scr').value=='us';scSel={d:dsel,r:us?'us':'full'};
+function renderSession(){const box=$('scbox');if(!box)return;const dsel=$('scd').value||'all',rg=$('scr').value||'auto',lay=$('scl').value||'stack',dots=$('scdot').checked!==false;scSel={d:dsel,r:rg,l:lay,dot:dots};
  let a=view().map(i=>trades[i]);if(dsel!='all')a=a.filter(t=>t.day==dsel);
  if(!a.length){box.innerHTML='<div class="mu" style="padding:12px">No trades for this selection.</div>';return}
- const nd=new Set(a.map(t=>t.day)).size,T0=us?930:0,T1=1380,W=1100,H=520,L=72,R=64,TP=48,PH=300,PW=W-L-R,f=n=>n.toFixed(1),X=p=>L+(Math.min(Math.max(p,T0),T1)-T0)/(T1-T0)*PW,
-  ev=[],sev=[];a.forEach(t=>{const z=(+t.size||1)/nd;ev.push([etPos(t.xt),net(t),t]);sev.push([etPos(t.et),z],[etPos(t.xt),-z])});
- ev.sort((p,q)=>p[0]-q[0]);sev.sort((p,q)=>p[0]-q[0]);
- const steps=E=>{let v=0;const pts=[];for(const e of E){v+=e[1];if(e[0]<T0)pts.length=0,pts.push([T0,v]);else{if(!pts.length)pts.push([T0,0]);pts.push([e[0],v])}}if(!pts.length)pts.push([T0,0]);return pts},
-  cp=steps(ev),sp=steps(sev),vals=cp.map(p=>p[1]).concat(0),mn0=Math.min(...vals),mx0=Math.max(...vals),pad=(mx0-mn0||1)*.1,mn=mn0-pad,mx=mx0+pad,
-  Y=v=>TP+PH-(v-mn)/(mx-mn)*PH,mz=Math.max(1,...sp.map(p=>p[1]))*1.15,Z=v=>TP+PH-v/mz*PH,
+ const nd=new Set(a.map(t=>t.day)).size,ps=a.flatMap(t=>[etPos(t.et),etPos(t.xt)]);let T0=0,T1=1380;
+ if(rg=='us')T0=930;else if(rg=='auto'){T0=Math.max(0,Math.floor((Math.min(...ps)-20)/30)*30);T1=Math.min(1380,Math.ceil((Math.max(...ps)+20)/30)*30);if(T1-T0<120){T1=Math.min(1380,T0+120);T0=Math.max(0,T1-120)}}
+ const stk=lay=='stack',W=1100,L=72,R=stk?24:64,PW=W-L-R,TP=56,PH=stk?240:300,SH=stk?110:PH,py0=TP,sy0=stk?TP+PH+34:TP,bot=sy0+SH,H=bot+150,f=n=>n.toFixed(1),X=p=>L+(Math.min(Math.max(p,T0),T1)-T0)/(T1-T0)*PW,ev=[],sev=[];
+ a.forEach(t=>{const z=(+t.size||1)/nd;ev.push([etPos(t.xt),net(t),t]);sev.push([etPos(t.et),z],[etPos(t.xt),-z])});ev.sort((p,q)=>p[0]-q[0]);sev.sort((p,q)=>p[0]-q[0]);
+ const steps=E=>{let v=0;const pts=[];for(const e of E){v+=e[1];if(e[0]<T0){pts.length=0;pts.push([T0,v])}else{if(!pts.length)pts.push([T0,0]);pts.push([e[0],v])}}if(!pts.length)pts.push([T0,0]);return pts},
+  cp=steps(ev),sp=steps(sev),vals=cp.map(p=>p[1]).concat(0),mn0=Math.min(...vals),mx0=Math.max(...vals),rg_=(mx0-mn0||1),mn=mn0-rg_*.08,mx=mx0+rg_*.28,
+  Y=v=>py0+PH-(v-mn)/(mx-mn)*PH,mz=Math.max(1,...sp.map(p=>p[1]))*1.12,Z=v=>sy0+SH-v/mz*SH,
   path=(pts,F)=>{let d=`M${f(X(T0))},${f(F(pts[0][1]))}`;for(let i=1;i<pts.length;i++)d+=`H${f(X(pts[i][0]))}V${f(F(pts[i][1]))}`;return d+`H${f(X(T1))}`},
-  D=sessData(a),col=x=>x.n?(x.s>0?'38,166,154':'239,83,80'):'120,130,150',m0=v=>(v<0?'-':'')+'$'+Math.abs(Math.round(v)),tx=(x,y,t,o='')=>`<text x="${f(x)}" y="${f(y)}" font-size="12" ${/fill=/.test(o)?'':'fill="#c3cada"'} ${o}>${t}</text>`;
+  D=sessData(a),col=x=>x.n?(x.s>0?'38,166,154':'239,83,80'):'120,130,150',m0=v=>(v<0?'-':'')+'$'+Math.abs(Math.round(v)),
+  tx=(x,y,t,o='')=>`<text x="${f(x)}" y="${f(y)}" ${/font-size=/.test(o)?'':'font-size="12"'} ${/fill=/.test(o)?'':'fill="#c3cada"'} ${o}>${t}</text>`,hl=(y,c)=>`<line x1="${L}" x2="${L+PW}" y1="${f(y)}" y2="${f(y)}" stroke="${c}"/>`;
  let g=`<rect width="${W}" height="${H}" fill="#0f1115"/>`;
- SBD.forEach(([nm,s0,e0])=>{if(e0<=T0)return;const x0=X(s0),x1=X(e0),w=x1-x0,q=D[nm],wr=q.n?(q.w/q.n*100).toFixed(0)+'%':'-',lines=[];
-  if(w>=60)lines.push(nm.length*6.6>w-8?nm.split(' ')[0]:nm);if(w>=140)lines.push(`WR ${wr} | PF ${pfS(q)}`);
-  g+=`<rect x="${f(x0)}" y="${TP}" width="${f(w)}" height="${PH}" fill="rgba(${col(q)},${q.n?.17:.07})"><title>${nm}: ${q.n} trades | win rate ${wr} | profit factor ${pfS(q)} | net ${usd(q.s)}</title></rect><line x1="${f(x0)}" x2="${f(x0)}" y1="${TP}" y2="${TP+PH}" stroke="#2a3142"/>`+lines.map((t,i)=>tx(x0+6,TP+16+i*15,t,'fill="#e6e9f2"')).join('')});
- {const raw=(mx-mn)/5,mag=10**Math.floor(Math.log10(raw)),stp=[1,2,5,10].map(q=>q*mag).find(q=>q>=raw);for(let v=Math.ceil(mn/stp)*stp;v<=mx+1e-9;v+=stp)g+=`<line x1="${L}" x2="${L+PW}" y1="${f(Y(v))}" y2="${f(Y(v))}" stroke="#1c2230"/>`+tx(L-8,Y(v)+4,m0(v),'text-anchor="end"')}
- const st_=Math.max(1,Math.ceil(mz/5));for(let z=0;z<=mz;z+=st_)g+=tx(L+PW+8,Z(z)+4,z,'fill="#ffb74d"');
+ SBD.forEach(([nm,s0,e0])=>{if(e0<=T0||s0>=T1)return;const x0=X(s0),x1=X(e0),w=x1-x0,q=D[nm],wr=q.n?(q.w/q.n*100).toFixed(0)+'%':'-',lines=[];
+  if(w>=60)lines.push(nm.length*6.6>w-8?nm.split(' ')[0]:nm);if(w>=150)lines.push(`WR ${wr} | PF ${pfS(q)}`);
+  g+=`<rect x="${f(x0)}" y="${py0}" width="${f(w)}" height="${bot-py0}" fill="rgba(${col(q)},${q.n?.07:.03})"><title>${nm}: ${q.n} trades | win rate ${wr} | profit factor ${pfS(q)} | net ${usd(q.s)}</title></rect><rect x="${f(x0)}" y="${py0}" width="${f(w)}" height="4" fill="rgba(${col(q)},.9)"/><line x1="${f(x0)}" x2="${f(x0)}" y1="${py0}" y2="${bot}" stroke="#2a3142" stroke-dasharray="2 4"/>`+lines.map((t,i)=>tx(x0+6,py0+20+i*15,t,'fill="#e6e9f2"')).join('')});
+ {const raw=(mx-mn)/5,mag=10**Math.floor(Math.log10(raw)),stp=[1,2,5,10].map(q=>q*mag).find(q=>q>=raw);for(let v=Math.ceil(mn/stp)*stp;v<=mx+1e-9;v+=stp)g+=hl(Y(v),'#1c2230')+tx(L-8,Y(v)+4,m0(v),'text-anchor="end"')}
+ const zs=Math.max(1,Math.ceil(mz/(stk?3:5)));for(let z=0;z<=mz;z+=zs)g+=(stk?hl(Z(z),'#1c2230'):'')+tx(stk?L-8:L+PW+8,Z(z)+4,z,stk?'text-anchor="end" fill="#ffb74d"':'fill="#ffb74d"');
  if(mn<0&&mx>0)g+=`<line x1="${L}" x2="${L+PW}" y1="${f(Y(0))}" y2="${f(Y(0))}" stroke="#6b7389" stroke-dasharray="4 4"/>`;
- g+=`<path d="${path(sp,Z)}V${f(Z(0))}H${f(X(T0))}Z" fill="rgba(255,183,77,.18)" stroke="none"/><path d="${path(sp,Z)}" fill="none" stroke="#ffb74d" stroke-width="2"/><path d="${path(cp,Y)}" fill="none" stroke="#e6e9f2" stroke-width="2.4"/>`;
- let cum=0;for(const e of ev){cum+=e[1];if(e[0]<T0)continue;g+=`<circle cx="${f(X(e[0]))}" cy="${f(Y(cum))}" r="3.6" fill="${e[1]>0?'#26a69a':'#ef5350'}" stroke="#0f1115"><title>${fmt(e[2].xt)} | ${e[2].long?'LONG':'SHORT'} x${e[2].size||1} | ${usd(e[1])}</title></circle>`}
- const ref=(trades[0]||{et:0}).et*1000,dm=Math.round((off($('disptz').value,ref)-off('America/New_York',ref))/60),hh=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')},tzn=$('disptz').value=='Asia/Kolkata'?'IST':$('disptz').value.split('/').pop();
- const ticks=[];for(let k=0;k<=23;k++)if(k*60>=T0&&k*60<=T1)ticks.push(k*60);if(us)ticks.unshift(T0);
- ticks.forEach(p=>{const nyMin=(1080+p)%1440;g+=`<line x1="${f(X(p))}" x2="${f(X(p))}" y1="${TP+PH}" y2="${TP+PH+5}" stroke="#6b7389"/>`+tx(X(p),TP+PH+20,hh(nyMin),'text-anchor="middle"')+tx(X(p),TP+PH+36,hh(nyMin+dm),'text-anchor="middle" fill="#8b93a7"')});
- g+=tx(6,TP+PH+20,'NY')+tx(6,TP+PH+36,tzn,'fill="#8b93a7"');
+ if(stk)g+=hl(py0+PH,'#2a3142')+hl(sy0+SH,'#2a3142');
+ g+=`<path d="${path(sp,Z)}V${f(Z(0))}H${f(X(T0))}Z" fill="rgba(255,183,77,.2)" stroke="none"/><path d="${path(sp,Z)}" fill="none" stroke="#ffb74d" stroke-width="1.8"/><path d="${path(cp,Y)}" fill="none" stroke="#e6e9f2" stroke-width="2.4"/>`;
+ if(dots){let cum=0;const r=a.length>40?2.6:3.4;for(const e of ev){cum+=e[1];if(e[0]<T0)continue;g+=`<circle cx="${f(X(e[0]))}" cy="${f(Y(cum))}" r="${r}" fill="${e[1]>0?'#26a69a':'#ef5350'}" stroke="#0f1115" stroke-width=".8"><title>${fmt(e[2].xt)} | ${e[2].long?'LONG':'SHORT'} x${e[2].size||1} | ${usd(e[1])}</title></circle>`}}
+ const ref=(trades[0]||{et:0}).et*1000,dm=Math.round((off($('disptz').value,ref)-off('America/New_York',ref))/60),hh=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')},tzn=$('disptz').value=='Asia/Kolkata'?'IST':$('disptz').value.split('/').pop(),
+  sp_=T1-T0,tstep=sp_<=240?30:sp_<=600?60:120;
+ for(let p=Math.ceil(T0/tstep)*tstep;p<=T1;p+=tstep){const nyMin=(1080+p)%1440;g+=`<line x1="${f(X(p))}" x2="${f(X(p))}" y1="${bot}" y2="${bot+5}" stroke="#6b7389"/>`+tx(X(p),bot+20,hh(nyMin),'text-anchor="middle"')+tx(X(p),bot+36,hh(nyMin+dm),'text-anchor="middle" fill="#8b93a7"')}
+ g+=tx(6,bot+20,'NY')+tx(6,bot+36,tzn,'fill="#8b93a7"');
  g+=tx(L,22,`<tspan font-weight="bold" font-size="15" fill="#fff">Cumulative P&amp;L and position size by time of day</tspan>  ${dsel=='all'?nd+' day'+(nd>1?'s':'')+' (P&amp;L summed, size averaged per day)':dlab(dsel)}`);
- g+=`<line x1="${L}" x2="${L+24}" y1="38" y2="38" stroke="#e6e9f2" stroke-width="2.4"/>`+tx(L+30,42,'P&amp;L ($, left axis)')+`<line x1="${L+170}" x2="${L+194}" y1="38" y2="38" stroke="#ffb74d" stroke-width="2"/>`+tx(L+200,42,'Position size (contracts, right axis)','fill="#ffb74d"');
- const cw=(W-40)/4,ly=TP+PH+62;
+ if(stk)g+=tx(L,py0-8,'Cumulative P&amp;L ($)','fill="#aab2c5" font-size="11"')+tx(L,sy0-8,'Position size (contracts)','fill="#ffb74d" font-size="11"');
+ else g+=`<line x1="${L}" x2="${L+24}" y1="38" y2="38" stroke="#e6e9f2" stroke-width="2.4"/>`+tx(L+30,42,'P&amp;L ($, left axis)')+`<line x1="${L+170}" x2="${L+194}" y1="38" y2="38" stroke="#ffb74d" stroke-width="2"/>`+tx(L+200,42,'Position size (contracts, right axis)','fill="#ffb74d"');
+ const cw=(W-40)/4,ly=bot+62;
  SBD.slice().sort((p,q)=>p[1]-q[1]).forEach(([nm],i)=>{const q=D[nm],x0=20+i*cw,wr=q.n?(q.w/q.n*100).toFixed(0)+'%':'-';
   g+=`<rect x="${f(x0)}" y="${ly}" width="12" height="12" fill="rgba(${col(q)},.75)"/>`+tx(x0+18,ly+11,nm,'font-weight="bold" fill="#fff"')+tx(x0,ly+34,`Win rate ${wr} | Profit factor ${pfS(q)}`)+tx(x0,ly+52,`Net ${usd(q.s)} | ${q.n} trade${q.n==1?'':'s'}`)+tx(x0,ly+70,`Avg size ${q.n?(q.z/q.n).toFixed(1):'-'} contracts`,'fill="#8b93a7"')});
  box.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" font-family="Segoe UI,Arial,sans-serif" data-w="${W}" data-h="${H}">${g}</svg>`}
@@ -534,9 +538,9 @@ function showSummary(){sumOn=true;syncNote();const v=view(),S=stats(v),pc=x=>(x*
  row=(lab,o,ck)=>`<div class="sr" ${ck?`onclick="${ck}"`:''}><span style="width:150px">${lab}</span><span class="mu" style="width:80px">${o.n} trades</span><span class="mu" style="width:80px">Win ${pc(o.w/o.n)}</span><span style="flex:1"><span style="display:block;height:12px;width:${Math.abs(o.s)/mx*100}%;background:${o.s>=0?'#26a69a':'#ef5350'};border-radius:3px"></span></span><b class="${o.s>=0?'w':'l'}" style="width:100px;text-align:right">${usd(o.s)}</b></div>`;
  ['chart','det','note'].forEach(x=>$(x).style.display='none');$('sum').style.display='block';
  $('sum').innerHTML=`<h2 style="margin:0">Summary</h2><div class="mu">${S.n} trades currently shown in the list (use the filters on the left to change this)${flt.day!='all'?` | only ${dlab(flt.day)} <button onclick="backToSummary()" style="margin-left:8px">Show all days</button>`:''}</div><div class="cg">${card('Net',usd(S.net),S.net>=0?'w':'l')}${card('Win rate',pc(S.wr))}${card('Trades',S.n)}${card('Avg win',usd(S.aw),'w')}${card('Avg loss',usd(S.al),'l')}${card('Profit factor',isFinite(S.pf)?S.pf.toFixed(2):'-')}${card('Best day',bs.length?usd(bs[0][1].s):'-','w')}${card('Worst day',bs.length?usd(bs[bs.length-1][1].s):'-','l')}</div>
- <div class="c2" style="margin-bottom:12px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><b>Session chart</b><select id="scd" onchange="renderSession()"><option value="all">All days</option>${D.map(([d])=>`<option value="${d}">${dlab(d)}</option>`).join('')}</select><select id="scr" onchange="renderSession()"><option value="full">Full trading day (18:00-17:00 NY)</option><option value="us">US hours (09:30-17:00 NY)</option></select><button onclick="scPng()">Save chart as PNG</button></div><div id="scbox"></div></div>${calHtml(S.byDay)}<div class="c2" style="padding:0"><div class="mu" style="padding:10px 12px">Day-end net (click a day to open its trades)</div>${D.map(([d,o])=>row(dlab(d),o,`gotoDay('${d}')`)).join('')}</div>
+ <div class="c2" style="margin-bottom:12px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><b>Session chart</b><select id="scd" onchange="renderSession()"><option value="all">All days</option>${D.map(([d])=>`<option value="${d}">${dlab(d)}</option>`).join('')}</select><select id="scr" onchange="renderSession()"><option value="auto">Zoom to my trades</option><option value="full">Full trading day (18:00-17:00 NY)</option><option value="us">US hours (09:30-17:00 NY)</option></select><select id="scl" onchange="renderSession()"><option value="stack">Two panels (cleaner)</option><option value="overlay">One panel (overlay)</option></select><label class="mu" style="flex-direction:row;align-items:center;gap:4px"><input id="scdot" type="checkbox" checked onchange="renderSession()"> Trade dots</label><button onclick="scPng()">Save chart as PNG</button></div><div id="scbox"></div></div>${calHtml(S.byDay)}<div class="c2" style="padding:0"><div class="mu" style="padding:10px 12px">Day-end net (click a day to open its trades)</div>${D.map(([d,o])=>row(dlab(d),o,`gotoDay('${d}')`)).join('')}</div>
  <div class="c2" style="padding:0;margin-top:12px"><div class="mu" style="padding:10px 12px">By time of day (New York time)</div>${TB.filter(b=>S.byT[b]).map(b=>row(b,S.byT[b])).join('')}</div>
- ${sizeHtml(S)}<div style="margin:12px 0;display:flex;gap:8px"><button onclick="sumPng()">Save summary as PNG</button><button onclick="sumCsv()">Export day table (CSV)</button></div>`;if([...(($('scd').options)||[])].some(o=>o.value==scSel.d))$('scd').value=scSel.d;$('scr').value=scSel.r;renderSession();st('Summary view | click any trade or a day to go back to the chart')}
+ ${sizeHtml(S)}<div style="margin:12px 0;display:flex;gap:8px"><button onclick="sumPng()">Save summary as PNG</button><button onclick="sumCsv()">Export day table (CSV)</button></div>`;if([...(($('scd').options)||[])].some(o=>o.value==scSel.d))$('scd').value=scSel.d;$('scr').value=scSel.r;$('scl').value=scSel.l;$('scdot').checked=scSel.dot;renderSession();st('Summary view | click any trade or a day to go back to the chart')}
 function sumPng(){const S=stats(view()),D=Object.entries(S.byDay).sort(),W=1280,H=190+D.length*34+40,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
  g.fillStyle='#0b0d11';g.fillRect(0,0,W,H);g.fillStyle='#fff';g.font='bold 28px sans-serif';g.fillText('MNQ summary | '+csvName,24,44);
  [['Net',usd(S.net)],['Win rate',(S.wr*100).toFixed(0)+'%'],['Trades',S.n],['Avg win',usd(S.aw)],['Avg loss',usd(S.al)],['Profit factor',isFinite(S.pf)?S.pf.toFixed(2):'-']].forEach((x,i)=>{g.font='15px sans-serif';g.fillStyle='#9aa3b8';g.fillText(x[0],24+i*205,92);g.font='bold 26px sans-serif';g.fillStyle=['Net','Avg win','Avg loss'].includes(x[0])?(String(x[1])[0]=='-'?'#ef5350':'#26a69a'):'#fff';g.fillText(x[1],24+i*205,126)});
@@ -613,7 +617,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v17 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v18 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
