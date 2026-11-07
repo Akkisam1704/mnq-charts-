@@ -199,16 +199,29 @@ AI_SYSTEM = (
 def ai_review(b):
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
-        return {"error": "AI review is not set up yet. Add ANTHROPIC_API_KEY in your Render Environment settings, then redeploy."}
-    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5")
-    r = S.post("https://api.anthropic.com/v1/messages", timeout=90,
-               headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-               json={"model": model, "max_tokens": 1500, "system": AI_SYSTEM,
-                     "messages": [{"role": "user", "content": "Here is the day's data as JSON:\n" + json.dumps(b["data"])}]})
-    d = r.json()
-    if r.status_code != 200:
-        return {"error": "AI request failed: " + str((d.get("error") or {}).get("message", d))[:300]}
-    return {"text": "".join(c.get("text", "") for c in d.get("content", []) if c.get("type") == "text").strip(), "model": model}
+        return {"error": "AI review is not set up yet. In Render, open your service, go to Environment, add ANTHROPIC_API_KEY with your key, and let it redeploy."}
+    models = [m for m in dict.fromkeys([os.environ.get("ANTHROPIC_MODEL"), "claude-sonnet-5-5", "claude-sonnet-4-6", "claude-haiku-5-5"]) if m]
+    tried = []
+    for model in models:
+        try:
+            r = S.post("https://api.anthropic.com/v1/messages", timeout=90,
+                       headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                       json={"model": model, "max_tokens": 1500, "system": AI_SYSTEM,
+                             "messages": [{"role": "user", "content": "Here is the day's data as JSON:\n" + json.dumps(b["data"])}]})
+        except requests.RequestException as e:
+            return {"error": "Could not reach the Anthropic service: " + str(e)[:200]}
+        try:
+            d = r.json()
+        except Exception:
+            return {"error": f"Unexpected reply from the Anthropic service (status {r.status_code})."}
+        if r.status_code == 200:
+            return {"text": "".join(c.get("text", "") for c in d.get("content", []) if c.get("type") == "text").strip(), "model": model}
+        err = d.get("error") or {}
+        if r.status_code == 404 or err.get("type") == "not_found_error":
+            tried.append(model)
+            continue
+        return {"error": f"AI request failed ({r.status_code}): " + str(err.get("message", d))[:300]}
+    return {"error": "None of these models were available to your account: " + ", ".join(tried) + ". Add ANTHROPIC_MODEL in Render with a model name from your Anthropic Console."}
 
 
 def rev_api(path, b):
@@ -223,6 +236,8 @@ def rev_api(path, b):
         return {"ok": True}
     if path == "/api/ai_review":
         return ai_review(b)
+    if path == "/api/ai_status":
+        return {"key": bool(os.environ.get("ANTHROPIC_API_KEY"))}
     return {"error": "unknown"}
 
 
@@ -313,7 +328,7 @@ class H(BaseHTTPRequestHandler):
             b = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             if self.path == "/api/save":
                 return self.send(200, json.dumps(save_png(b)).encode(), "application/json")
-            if self.path.startswith("/api/review_") or self.path == "/api/ai_review":
+            if self.path.startswith("/api/review_") or self.path.startswith("/api/ai_"):
                 return self.send(200, json.dumps(rev_api(self.path, b)).encode(), "application/json")
             if self.path.startswith("/api/log_"):
                 return self.send(200, json.dumps(log_api(self.path, b)).encode(), "application/json")
@@ -348,7 +363,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v20</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v21</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -393,7 +408,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <label>PNG size<select id="psz"><option value="1600x900">Large 1600x900</option><option value="1920x1080" selected>Extra large 1920x1080</option><option value="2560x1440">Huge 2560x1440</option></select></label>
 <div style="display:flex;flex-direction:column;font-size:11px;color:#8b93a7;gap:3px;position:relative">Saved online<button id="slogb" type="button" style="min-width:220px;text-align:left">Choose a saved log &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:30;top:100%;left:0;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:6px"></div></div>
 <label>Trade log CSV<input id="f" type="file" accept=".csv"></label>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v20</div></header>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v21</div></header>
 <main><div id="left"><div id="flt"></div><div id="list"><div class="it">Enter login, then choose your CSV.</div></div></div>
 <div id="right"><div id="bar"></div><div id="st"></div><div id="chart"></div><div id="det"></div><div id="note"></div><div id="sum" style="display:none"></div><div id="jr" style="display:none"></div></div></main><div id="toast"></div>
 <script>
@@ -560,9 +575,13 @@ function aiPayload(d){const r=reviews[d],T=dayTrades(d),nt=t=>notes[nk(t)]||{};
   stats:{trades:r.n,wins:r.w,losses:r.l,win_rate_pct:+(r.wr*100).toFixed(1),net_usd:+r.net.toFixed(2),profit_factor:r.pf==null?null:+r.pf.toFixed(2),avg_win:+r.aW.toFixed(2),avg_loss:+r.aL.toFixed(2),best_trade:+r.best.toFixed(2),worst_trade:+r.worst.toFixed(2),max_intraday_drawdown:+r.dd.toFixed(2),longest_losing_streak:r.mr,avg_size:+r.avgSz.toFixed(1),max_size:r.maxSz,avg_hold_min:+r.avgHold.toFixed(1)},
   sessions:Object.fromEntries(TB.filter(b=>r.sess[b].n).map(b=>[b,{trades:r.sess[b].n,win_rate_pct:+(r.sess[b].w/r.sess[b].n*100).toFixed(0),profit_factor:pfS(r.sess[b]),net_usd:+r.sess[b].s.toFixed(2)}])),
   discipline_checks:r.checks.map(c=>({check:c.label,passed:c.ok,detail:c.detail})),observations:r.ins,trader_reflection:(r.mine||'').slice(0,600)}}
-async function aiRev(d){const r=reviews[d];if(!r)return;st('Writing the AI review for '+dlab(d)+' - this can take up to a minute...');
- try{const res=await(await fetch('/api/ai_review',{method:'POST',body:JSON.stringify({data:aiPayload(d)})})).json();if(res.error)throw new Error(res.error);
-  r.ai=res.text;r.aiFp=r.fp;r.aiAt=Date.now();r.aiModel=res.model;await saveRev(d);jrOpen.add(d);renderJournal();st('AI review saved for '+dlab(d))}catch(e){st(e.message,1)}}
+let aiOn=null;
+async function aiRev(d){const r=reviews[d];if(!r)return;const m=$('aim-'+d),b=$('aib-'+d),say=(t,e)=>{if(m){m.textContent=t;m.style.color=e?'#ef5350':'#9aa3b8'}};
+ if(b)b.disabled=true;say('Writing the AI review... this can take up to a minute.');
+ try{const resp=await fetch('/api/ai_review',{method:'POST',body:JSON.stringify({data:aiPayload(d)})});let res;try{res=await resp.json()}catch(x){throw new Error('The server gave an unexpected reply (status '+resp.status+'). Check the Logs tab in Render.')}
+  if(res.error)throw new Error(res.error);
+  r.ai=res.text;r.aiFp=r.fp;r.aiAt=Date.now();r.aiModel=res.model;await saveRev(d);jrOpen.add(d);renderJournal();toast('AI review saved for '+dlab(d))}
+ catch(e){say('AI review failed: '+e.message,1);toast('AI review failed: '+e.message);if(b)b.disabled=false}}
 function jrBody(d,r){const g=(a,b,c)=>`<div class="c2"><span class="mu">${a}</span><b class="${c||''}" style="font-size:17px">${b}</b></div>`,pf=r.pf==null?'-':r.pf.toFixed(2),stale=r.ai&&r.aiFp!=r.fp,pc=r.checks.filter(c=>c.ok).length;
  return `<div class="cg">${g('Net',usd(r.net),r.net>=0?'w':'l')}${g('Win rate',(r.wr*100).toFixed(0)+'%')}${g('Profit factor',pf)}${g('Avg win / avg loss',usd(r.aW)+' / '+usd(r.aL))}${g('Best / worst trade',usd(r.best)+' / '+usd(r.worst))}${g('Max drawdown in the day',usd(-r.dd),'l')}${g('Longest losing streak',r.mr)}${g('Size avg / max',r.avgSz.toFixed(1)+' / '+r.maxSz)}</div>
  <div class="mu" style="margin:6px 0">Discipline checks: ${pc} of ${r.checks.length} passed</div>${r.checks.map(c=>`<div class="ck"><b class="${c.ok?'w':'l'}">${c.ok?'PASS':'CHECK'}</b><span style="flex:1">${esc(c.label)}<br><span class="mu">${esc(c.detail)}</span></span></div>`).join('')}
@@ -570,12 +589,12 @@ function jrBody(d,r){const g=(a,b,c)=>`<div class="c2"><span class="mu">${a}</sp
  <div class="c2" style="padding:0;margin-top:12px;overflow-x:auto"><table class="tb"><tr><th>Session (NY)</th><th>Trades</th><th>Win rate</th><th>Profit factor</th><th>Net</th></tr>${TB.filter(b=>r.sess[b].n).map(b=>{const q=r.sess[b];return `<tr><td>${b}</td><td>${q.n}</td><td>${(q.w/q.n*100).toFixed(0)}%</td><td>${pfS(q)}</td><td class="${q.s>=0?'w':'l'}">${usd(q.s)}</td></tr>`}).join('')}</table></div>
  <div class="mu" style="margin:14px 0 4px">My reflection (saved with this day)</div><textarea id="jm-${d}" style="width:100%;height:70px;box-sizing:border-box" onblur="saveMine('${d}')">${esc(r.mine||'')}</textarea>
  <div class="mu" style="margin:14px 0 4px">AI deep review${stale?' (outdated: your trades for this day changed after it was written)':''}</div>${r.ai?`<div style="white-space:pre-wrap;font-size:13px;line-height:1.55">${esc(r.ai)}</div><div class="mu" style="margin-top:6px">Written ${new Date(r.aiAt).toLocaleString()} | ${esc(r.aiModel||'')}</div>`:'<div class="mu">Not written yet. Click the button below.</div>'}
- <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button onclick="aiRev('${d}')">${r.ai?'Regenerate':'Generate'} AI deep review</button><button onclick="gotoDay('${d}')">Open this day on the chart</button><button onclick="resetRev('${d}')">Reset this log</button></div>`}
+ <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button id="aib-${d}" onclick="aiRev('${d}')">${r.ai?'Regenerate':'Generate'} AI deep review</button><button onclick="gotoDay('${d}')">Open this day on the chart</button><button onclick="resetRev('${d}')">Reset this log</button></div><div id="aim-${d}" class="mu" style="margin-top:8px"></div>`}
 function renderJournal(){const ds=Object.keys(reviews).sort().reverse();if(!ds.length){$('jr').innerHTML='<div class="mu" style="padding:12px">Load a trade CSV first. A log is created automatically for each trading day.</div>';return}
  if(!jrInit){jrOpen.add(ds[0]);jrInit=true}
- $('jr').innerHTML=`<h2 style="margin:0">Daily log</h2><div class="mu" style="margin:4px 0 12px">${ds.length} trading days | total net ${usd(ds.reduce((a,d)=>a+reviews[d].net,0))} | created automatically from your uploads and saved online</div>`+
+ $('jr').innerHTML=`<h2 style="margin:0">Daily log</h2><div class="mu" style="margin:4px 0 12px">${ds.length} trading days | total net ${usd(ds.reduce((a,d)=>a+reviews[d].net,0))} | created automatically from your uploads and saved online | <b style="color:${aiOn&&aiOn.key?'#26a69a':'#ef5350'}">AI review: ${aiOn==null?'checking...':aiOn.key?'ready':'not set up (add ANTHROPIC_API_KEY in Render, Environment)'}</b></div>`+
  ds.map(d=>{const r=reviews[d],pc=r.checks.filter(c=>c.ok).length;return `<details class="rv" ${jrOpen.has(d)?'open':''} ontoggle="toggleJ('${d}',this.open)"><summary><b style="min-width:150px">${dlab(d)}</b><b class="${r.net>=0?'w':'l'}" style="min-width:90px">${usd(r.net)}</b><span class="mu">${r.n} trades | win ${(r.wr*100).toFixed(0)}% | PF ${r.pf==null?'-':r.pf.toFixed(2)} | checks ${pc}/${r.checks.length}</span>${r.ai?'<span class="chip on">AI review</span>':''}${r.mine?'<span class="chip">my note</span>':''}</summary><div class="rb">${jrBody(d,r)}</div></details>`}).join('')}
-async function showJournal(){syncNote();sumOn=false;['chart','det','note','sum'].forEach(x=>$(x).style.display='none');$('jr').style.display='block';$('jr').innerHTML='<div class="mu" style="padding:12px">Building the daily log...</div>';await syncReviews();renderJournal();st('Daily log | one entry per trading day, saved online')}
+async function showJournal(){syncNote();sumOn=false;['chart','det','note','sum'].forEach(x=>$(x).style.display='none');$('jr').style.display='block';$('jr').innerHTML='<div class="mu" style="padding:12px">Building the daily log...</div>';await syncReviews();renderJournal();try{aiOn=await(await fetch('/api/ai_status',{method:'POST',body:'{}'})).json();renderJournal()}catch(e){}st('Daily log | one entry per trading day, saved online')}
 let scSel={d:'all',r:'auto',l:'stack',dot:true};
 const SBD=[['Overnight / Asia / London',0,930],['NY open',930,1020],['Midday',1020,1200],['NY afternoon',1200,1380]];
 function sessData(a){const o={};TB.forEach(b=>o[b]={n:0,w:0,sw:0,sl:0,s:0,z:0});a.forEach(t=>{const x=o[bucket(t)],v=net(t);x.n++;x.s+=v;x.z+=(+t.size||1);if(v>0){x.w++;x.sw+=v}else if(v<0)x.sl+=v});return o}
@@ -720,7 +739,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v20 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v21 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
