@@ -363,7 +363,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v21</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v23</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -380,6 +380,28 @@ main{display:flex;height:calc(100vh - 78px)}
 #bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 #list .dh{padding:8px 12px;background:#10151f;color:#aab2c5;font-size:12px;border-bottom:1px solid #232938;position:sticky;top:0}
 #chart{overflow:hidden;width:100%}
+header#top{display:flex;align-items:center;gap:18px;padding:0 20px;height:60px;background:linear-gradient(90deg,#141821,#181d2e);border-bottom:1px solid #232938;position:sticky;top:0;z-index:40}
+.brand{display:flex;align-items:center;gap:10px;font-size:16px}#nav{display:flex;gap:6px}
+#nav button{white-space:nowrap;background:transparent;border:0;color:#9aa3b8;padding:9px 16px;border-radius:999px;font-weight:600;transition:all .15s}#nav button:hover{color:#fff;background:#1c2233}
+#nav button.act{color:#fff;background:linear-gradient(135deg,#6d5efc,#4c8dff);box-shadow:0 4px 16px rgba(92,110,255,.35)}
+.topr{margin-left:auto;display:flex;align-items:center;gap:10px}.topr #ver{margin-left:0}#lo{margin-left:0!important}
+label.btn{flex-direction:row;align-items:center;background:#2456c8;color:#fff;font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer}label.btn:hover{background:#2d63de}
+#setp{display:none;position:fixed;top:64px;right:16px;z-index:45;width:330px;max-height:calc(100vh - 84px);overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:12px;padding:14px;box-shadow:0 14px 44px rgba(0,0,0,.55);flex-direction:column;gap:12px}
+#setp select,#setp input:not([type=color]){width:100%;box-sizing:border-box}
+@media(min-width:801px){main{height:calc(100vh - 61px)}}
+#dash{max-width:1500px;margin:0 auto}.dh2{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.kg{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+.kp{background:linear-gradient(160deg,#171c28,#12161f);border:1px solid #232938;border-radius:14px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;transition:transform .15s,border-color .15s}.kp:hover{transform:translateY(-2px);border-color:#3a4766}
+.kl{font-size:12px;color:#9aa3b8;margin-bottom:6px}.kv{font-size:26px;font-weight:700}.ks{font-size:12px;color:#8b93a7;margin-top:4px}
+.gc{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.g3{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:12px;margin-bottom:14px}
+.cd2{background:linear-gradient(160deg,#171c28,#12161f);border:1px solid #232938;border-radius:14px;padding:16px 18px;min-width:0}.cd2 h3{margin:0 0 10px;font-size:14px;font-weight:600}
+.rseg{transition:stroke-dasharray .9s cubic-bezier(.2,.8,.2,1)}.hb{height:8px;background:#232938;border-radius:4px;margin-top:6px;overflow:hidden}.hb span{display:block;height:100%;border-radius:4px}
+.eqw{position:relative}.tip{position:absolute;pointer-events:none;display:none;background:#0b0d11ee;border:1px solid #3a4766;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;z-index:5;white-space:nowrap}
+.rt{width:100%;border-collapse:collapse;font-size:13px}.rt td,.rt th{padding:8px 6px;border-top:1px solid #1c2230;text-align:left}.rt th{color:#9aa3b8;font-weight:500;border-top:0}.rt tr.cl{cursor:pointer}.rt tr.cl:hover{background:#1a2030}
+.bb{cursor:pointer}.bb:hover rect{opacity:.8}.note2{background:#1b2740;border:1px solid #2456c8;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px}
+.strip{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}.chip2{background:#141821;border:1px solid #232938;border-radius:999px;padding:6px 14px;font-size:13px}
+@media(max-width:1100px){.kg{grid-template-columns:repeat(2,1fr)}.gc,.g3{grid-template-columns:1fr}}
+@media(max-width:800px){header#top{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}#nav{order:3;width:100%;overflow-x:auto}.topr{flex-wrap:wrap}.kg{grid-template-columns:1fr}}
 details.rv{background:#141821;border:1px solid #232938;border-radius:8px;margin-bottom:10px}details.rv>summary{cursor:pointer;padding:12px 14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}details.rv .rb{padding:0 14px 14px}.ck{display:flex;gap:10px;padding:7px 0;border-top:1px solid #1c2230;font-size:13px}.ck b{width:60px}
 #scbox svg{display:block;border-radius:6px;max-width:100%;height:auto}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(92px,1fr)) 110px;gap:4px;min-width:760px}.ch{color:#9aa3b8;font-size:12px;text-align:center;padding:4px}.cd{min-height:70px;border-radius:6px;padding:6px 8px;font-size:11px;background:#10141c;border:1px solid #1c2230}.cd.has{cursor:pointer}.cd.has:hover{outline:1px solid #4c8dff}.cd .dn{color:#c3cada;font-size:11px}.cd b{display:block;font-size:14px;margin:2px 0}
@@ -397,20 +419,25 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 #det{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 18px;margin-top:12px;padding:12px 14px;background:#121620;border:1px solid #232938;border-radius:8px}#det div{font-size:13px}#det span{color:#8b93a7;margin-right:6px}#det span:after{content:':'}
 #st{margin:8px 0;color:#8b93a7}#st.err{color:#ef5350}
 </style></head><body>
-<header>
+<header id="top">
+<div class="brand"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#2b2f4a"/><path d="M7 17l4-5 3 3 5-7" fill="none" stroke="#8f86ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>MNQ Journal</b></div>
+<nav id="nav"><button data-v="dash" onclick="showDash()">Dashboard</button><button data-v="daily" onclick="showJournal()">Daily log</button><button data-v="trades" onclick="showTrades()">Trades &amp; chart</button><button data-v="summary" onclick="showSummary()">Summary</button></nav>
+<div class="topr"><div style="position:relative"><button id="slogb" type="button">Saved logs &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:50;top:100%;right:0;margin-top:6px;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:8px"></div></div>
+<label class="btn">Upload CSV<input id="f" type="file" accept=".csv" hidden></label>
+<button id="setb" type="button" onclick="toggleSet()">&#9881; Settings</button>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v23</div></div>
+</header>
+<div id="setp">
 <label>TopstepX username<input id="u" autocomplete="off"></label>
 <label>API key<input id="k" type="password" autocomplete="off"></label>
 <label>CSV times without offset are in<select id="logtz"><option>America/New_York</option><option>America/Chicago</option><option>UTC</option><option>Asia/Kolkata</option></select></label>
 <label>Show chart time in<select id="disptz"><option>Asia/Kolkata</option><option>America/New_York</option><option>UTC</option></select></label>
 <label>Candle colours<select id="cpre"></select></label>
-<label>Up<input id="cup" type="color"></label>
-<label>Down<input id="cdn" type="color"></label>
+<div style="display:flex;gap:14px"><label>Up<input id="cup" type="color"></label><label>Down<input id="cdn" type="color"></label></div>
 <label>PNG size<select id="psz"><option value="1600x900">Large 1600x900</option><option value="1920x1080" selected>Extra large 1920x1080</option><option value="2560x1440">Huge 2560x1440</option></select></label>
-<div style="display:flex;flex-direction:column;font-size:11px;color:#8b93a7;gap:3px;position:relative">Saved online<button id="slogb" type="button" style="min-width:220px;text-align:left">Choose a saved log &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:30;top:100%;left:0;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:6px"></div></div>
-<label>Trade log CSV<input id="f" type="file" accept=".csv"></label>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px;align-self:center;margin-left:auto">Log out</a><div id="ver">v21</div></header>
+</div>
 <main><div id="left"><div id="flt"></div><div id="list"><div class="it">Enter login, then choose your CSV.</div></div></div>
-<div id="right"><div id="bar"></div><div id="st"></div><div id="chart"></div><div id="det"></div><div id="note"></div><div id="sum" style="display:none"></div><div id="jr" style="display:none"></div></div></main><div id="toast"></div>
+<div id="right"><div id="bar"></div><div id="st"></div><div id="dash"></div><div id="chart" style="display:none"></div><div id="det" style="display:none"></div><div id="note" style="display:none"></div><div id="sum" style="display:none"></div><div id="jr" style="display:none"></div></div></main><div id="toast"></div>
 <script>
 const CLOUD=__CLOUD__;
 const $=id=>document.getElementById(id);
@@ -466,7 +493,7 @@ function renderList(){const v=view(),dv={};v.forEach(i=>{const t=trades[i];(dv[t
  $('list').innerHTML=v.map(i=>{const t=trades[i];let h='';if(flt.sort=='t'&&t.day!=last){last=t.day;const D=dv[t.day];h=`<div class="dh">${dlab(t.day)} | ${D.n} trade${D.n>1?'s':''} | Day net <b class="${D.s>=0?'w':'l'}">${usd(D.s)}</b></div>`}
   return h+`<div class="it ${i==sel?'sel':''}" onclick="show(${i})">#${i+1} ${t.long?'LONG':'SHORT'} <span class="${net(t)>=0?'w':'l'}">${win(t)?'WIN':'LOSS'} ${usd(net(t))}</span>${hasN(t)?' <small>[note]</small>':''}<br><small>${fmt(t.et)}</small></div>`}).join('')||'<div class="it">No trades match.</div>';
  renderFlt();
- $('bar').innerHTML='<button onclick="showSummary()">Summary</button><button onclick="showJournal()">Daily log</button>'+(flt.day!='all'?'<button onclick="backToSummary()" style="border-color:#4c8dff">&larr; Back to all days</button><span class="mu" style="align-self:center">Showing only '+dlab(flt.day)+'</span>':'')+Object.keys(TFS).map(k=>`<button class="${k==tf?'on':''}" onclick="show(sel,'${k}')">${k}</button>`).join('')+'<button onclick="dl1()">Save this PNG</button><button onclick="dl5(sel)">Save all 5 timeframes</button><button onclick="dlAll()">Save ALL trades</button>'+(CLOUD?'':'<button onclick="openF()">Open snapshot folder</button>')}
+ $('bar').innerHTML=(flt.day!='all'?'<button onclick="backToSummary()" style="border-color:#4c8dff">&larr; Back to all days</button><span class="mu" style="align-self:center">Showing only '+dlab(flt.day)+'</span>':'')+Object.keys(TFS).map(k=>`<button class="${k==tf?'on':''}" onclick="show(sel,'${k}')">${k}</button>`).join('')+'<button onclick="dl1()">Save this PNG</button><button onclick="dl5(sel)">Save all 5 timeframes</button><button onclick="dlAll()">Save ALL trades</button>'+(CLOUD?'':'<button onclick="openF()">Open snapshot folder</button>')}
 
 async function bars(t){const k=t.et+'|'+t.xt;if(cache[k])return cache[k];
  const r=await fetch('/api/bars',{method:'POST',body:JSON.stringify({username:$('u').value.trim(),apiKey:$('k').value.trim(),symbol:t.sym,start:t.et-6*86400,end:t.xt+86400})});
@@ -499,7 +526,7 @@ function draw(t,d){const c=agg(d.bars,TFS[tf]);
  $('det').innerHTML=rows(t,sel).map(x=>`<div><span>${x[0]}</span>${x[0]=='Net PnL'||x[0]=='Result'?`<b class="${net(t)>=0?'w':'l'}">${x[1]}</b>`:x[0]=='Day running'?`<b class="${t.run>=0?'w':'l'}">${x[1]}</b>`:x[0].startsWith('Day end')?`<b class="${days[t.day].sum>=0?'w':'l'}">${x[1]}</b>`:x[1]}</div>`).join('');
  st(`${d.contract} | ${t.long?'LONG':'SHORT'} ${t.ep} → ${t.xp} | ${tf} | ${tznote}`)}
 
-async function show(i,k){if(i<0)return;syncNote();sumOn=false;$('sum').style.display='none';$('jr').style.display='none';$('chart').style.display='block';$('det').style.display='grid';$('note').style.display='flex';sel=i;if(k)tf=k;renderList();st('Loading data…');if(chart){chart.remove();chart=null;cs=null}$('det').innerHTML='';
+async function show(i,k){if(i<0)return;syncNote();setView('trades');sel=i;if(k)tf=k;renderList();st('Loading data…');if(chart){chart.remove();chart=null;cs=null}$('det').innerHTML='';
  try{draw(trades[i],await bars(trades[i]));renderNote(trades[i])}catch(e){st(e.message,1)}}
 
 function shot(){const t=trades[sel],[W,Hh]=$('psz').value.split('x').map(Number),ts=chart.timeScale(),rg=ts.getVisibleLogicalRange(),ow=chartW(),oh=chartH();
@@ -531,7 +558,7 @@ function view(){const o=[];trades.forEach((t,i)=>{if(flt.res=='w'&&!win(t)||flt.
  return o.sort({t:(a,b)=>a-b,l:(a,b)=>net(trades[a])-net(trades[b]),w:(a,b)=>net(trades[b])-net(trades[a])}[flt.sort])}
 function renderFlt(){const v=view(),sm=v.reduce((a,i)=>a+net(trades[i]),0),mk=(id,op,cur)=>`<select onchange="setF('${id}',this.value)">${op.map(o=>`<option value="${o[0]}" ${o[0]==cur?'selected':''}>${o[1]}</option>`).join('')}</select>`;
  $('flt').innerHTML=`<div style="display:flex;gap:6px">${[['all','All'],['w','Winners'],['l','Losers']].map(o=>`<span class="chip ${flt.res==o[0]?'on':''}" onclick="setF('res','${o[0]}')">${o[1]}</span>`).join('')}</div><div class="fg">${mk('side',[['all','Any side'],['L','Long'],['S','Short']],flt.side)}${mk('day',[['all','All days'],...Object.keys(days).sort().map(d=>[d,dlab(d)])],flt.day)}${mk('time',[['all','Any time (NY)'],...TB.map(x=>[x,x])],flt.time)}${mk('size',[['all','Any size'],...[...new Set(trades.map(t=>+t.size||1))].sort((a,b)=>a-b).map(z=>[z,z+(z>1?' contracts':' contract')])],flt.size)}${mk('sort',[['t','By time'],['l','Biggest loss'],['w','Biggest win']],flt.sort)}</div><div class="mu">Showing ${v.length} of ${trades.length} | net <b class="${sm>=0?'w':'l'}">${usd(sm)}</b></div><button onclick="dlAll()">Save these ${v.length} as PNGs</button>`}
-function setF(k,v){flt[k]=v;renderList();if(sumOn)showSummary()}
+function setF(k,v){flt[k]=v;renderList();if(sumOn)showSummary();else if(curView=='dash')renderDash()}
 function backToSummary(){flt.day='all';renderList();showSummary()}
 function gotoDay(d){flt.day=d;renderList();const v=view();if(v.length)show(v[0])}
 function stats(v){const a=v.map(i=>trades[i]),nt=a.map(net),W=nt.filter(x=>x>0),L=nt.filter(x=>x<0),sm=x=>x.reduce((p,q)=>p+q,0),bd={},bt={},bs={},bh={},nyH=t=>{const o=off('America/New_York',t.et*1000);return new Date((t.et+o)*1000).getUTCHours()};
@@ -564,7 +591,7 @@ async function syncReviews(){try{const r=await(await fetch('/api/review_all',{me
  const core=o=>JSON.stringify({...o,mine:0,ai:0,aiFp:0,aiAt:0,aiModel:0,gen:0});
  for(const d of [...new Set(trades.map(t=>t.day))]){const a=analyzeDay(d),o=reviews[d]||{},nw={...a,mine:o.mine||'',ai:o.ai||'',aiFp:o.aiFp||'',aiAt:o.aiAt||0,aiModel:o.aiModel||'',gen:o.gen||0};
   if(!reviews[d]||core(o)!=core(nw)){nw.gen=Date.now();reviews[d]=nw;await fetch('/api/review_save',{method:'POST',body:JSON.stringify({csv:csvName,day:d,review:nw})})}}
- if($('jr').style.display=='block')renderJournal()}catch(e){}}
+ if($('jr').style.display=='block')renderJournal();else if(curView=='dash')renderDash(true)}catch(e){}}
 const saveRev=d=>fetch('/api/review_save',{method:'POST',body:JSON.stringify({csv:csvName,day:d,review:reviews[d]})});
 function toggleJ(d,o){o?jrOpen.add(d):jrOpen.delete(d)}
 async function saveMine(d){const e=$('jm-'+d);if(!e||!reviews[d])return;reviews[d].mine=e.value;await saveRev(d)}
@@ -582,19 +609,89 @@ async function aiRev(d){const r=reviews[d];if(!r)return;const m=$('aim-'+d),b=$(
   if(res.error)throw new Error(res.error);
   r.ai=res.text;r.aiFp=r.fp;r.aiAt=Date.now();r.aiModel=res.model;await saveRev(d);jrOpen.add(d);renderJournal();toast('AI review saved for '+dlab(d))}
  catch(e){say('AI review failed: '+e.message,1);toast('AI review failed: '+e.message);if(b)b.disabled=false}}
+const COACH=`You are a trading-performance coach reviewing ONE day of MNQ futures trades for the trader who made them. Use only the data below. The statistics and discipline checks were already computed: quote them exactly and do not recompute them differently. Be specific, honest and constructive, not flattering. Refer to individual trades by number and time (New York time) when useful. Use these plain-text headings: What went well / What hurt most / Behaviour patterns / Rules for tomorrow (at most 3, about process and risk, never market calls). Do not give trade signals, price predictions or financial advice. Say so if the sample is too small to conclude anything. Maximum 350 words. No markdown tables.`;
+async function copyPacket(d){const r=reviews[d];if(!r)return;syncNote();const p=aiPayload(d),tr=p.trades;delete p.trades;
+ const txt=COACH+'\n\nHere is the day\'s data. Summary as JSON:\n'+JSON.stringify(p)+'\n\nTrades, one per line:\n'+tr.map(x=>JSON.stringify(x)).join('\n'),m=$('cpm-'+d);
+ try{await navigator.clipboard.writeText(txt);if(m){m.textContent='Copied ('+txt.length+' characters). Now paste it into a Claude chat.';m.style.color='#26a69a'}toast('Copied. Paste it into Claude.')}
+ catch(e){if(m){m.style.color='#ef5350';m.innerHTML='Your browser blocked automatic copying. Click in the box, press Ctrl+A then Ctrl+C, and paste it into Claude:<textarea readonly style="width:100%;height:130px;box-sizing:border-box;margin-top:6px">'+esc(txt)+'</textarea>'}}}
+async function savePasted(d){const e=$('pr-'+d),t=((e&&e.value)||'').trim(),r=reviews[d];if(!r)return;if(!t){toast('Paste the review from Claude into the box first.');return}
+ r.ai=t;r.aiFp=r.fp;r.aiAt=Date.now();r.aiModel='Claude chat (pasted by you)';await saveRev(d);jrOpen.add(d);renderJournal();toast('Review saved for '+dlab(d))}
 function jrBody(d,r){const g=(a,b,c)=>`<div class="c2"><span class="mu">${a}</span><b class="${c||''}" style="font-size:17px">${b}</b></div>`,pf=r.pf==null?'-':r.pf.toFixed(2),stale=r.ai&&r.aiFp!=r.fp,pc=r.checks.filter(c=>c.ok).length;
  return `<div class="cg">${g('Net',usd(r.net),r.net>=0?'w':'l')}${g('Win rate',(r.wr*100).toFixed(0)+'%')}${g('Profit factor',pf)}${g('Avg win / avg loss',usd(r.aW)+' / '+usd(r.aL))}${g('Best / worst trade',usd(r.best)+' / '+usd(r.worst))}${g('Max drawdown in the day',usd(-r.dd),'l')}${g('Longest losing streak',r.mr)}${g('Size avg / max',r.avgSz.toFixed(1)+' / '+r.maxSz)}</div>
  <div class="mu" style="margin:6px 0">Discipline checks: ${pc} of ${r.checks.length} passed</div>${r.checks.map(c=>`<div class="ck"><b class="${c.ok?'w':'l'}">${c.ok?'PASS':'CHECK'}</b><span style="flex:1">${esc(c.label)}<br><span class="mu">${esc(c.detail)}</span></span></div>`).join('')}
  ${r.ins.length?`<div class="mu" style="margin:12px 0 4px">Observations</div><ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">${r.ins.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
  <div class="c2" style="padding:0;margin-top:12px;overflow-x:auto"><table class="tb"><tr><th>Session (NY)</th><th>Trades</th><th>Win rate</th><th>Profit factor</th><th>Net</th></tr>${TB.filter(b=>r.sess[b].n).map(b=>{const q=r.sess[b];return `<tr><td>${b}</td><td>${q.n}</td><td>${(q.w/q.n*100).toFixed(0)}%</td><td>${pfS(q)}</td><td class="${q.s>=0?'w':'l'}">${usd(q.s)}</td></tr>`}).join('')}</table></div>
  <div class="mu" style="margin:14px 0 4px">My reflection (saved with this day)</div><textarea id="jm-${d}" style="width:100%;height:70px;box-sizing:border-box" onblur="saveMine('${d}')">${esc(r.mine||'')}</textarea>
- <div class="mu" style="margin:14px 0 4px">AI deep review${stale?' (outdated: your trades for this day changed after it was written)':''}</div>${r.ai?`<div style="white-space:pre-wrap;font-size:13px;line-height:1.55">${esc(r.ai)}</div><div class="mu" style="margin-top:6px">Written ${new Date(r.aiAt).toLocaleString()} | ${esc(r.aiModel||'')}</div>`:'<div class="mu">Not written yet. Click the button below.</div>'}
- <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button id="aib-${d}" onclick="aiRev('${d}')">${r.ai?'Regenerate':'Generate'} AI deep review</button><button onclick="gotoDay('${d}')">Open this day on the chart</button><button onclick="resetRev('${d}')">Reset this log</button></div><div id="aim-${d}" class="mu" style="margin-top:8px"></div>`}
+ <div class="mu" style="margin:14px 0 4px">AI deep review${stale?' (outdated: your trades for this day changed after it was written)':''}</div>${r.ai?`<div style="white-space:pre-wrap;font-size:13px;line-height:1.55">${esc(r.ai)}</div><div class="mu" style="margin-top:6px">Written ${new Date(r.aiAt).toLocaleString()} | ${esc(r.aiModel||'')}</div>`:'<div class="mu">Not written yet. Use the AI button below, or the Claude chat option further down.</div>'}
+ <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button id="aib-${d}" onclick="aiRev('${d}')">${r.ai?'Regenerate':'Generate'} AI deep review</button><button onclick="gotoDay('${d}')">Open this day on the chart</button><button onclick="resetRev('${d}')">Reset this log</button></div><div id="aim-${d}" class="mu" style="margin-top:8px"></div>
+ <div class="c2" style="margin-top:14px"><div style="font-weight:600;margin-bottom:4px">No API key? Use a Claude chat instead (free of API charges)</div><div class="mu" style="line-height:1.6">1. Click <b>Copy day for Claude</b>. 2. Paste it into a Claude chat (or your Claude Project). 3. Paste Claude's answer into the box below and click <b>Save pasted review</b>. It is then stored with this day, like an automatic one.</div>
+ <textarea id="pr-${d}" placeholder="Paste Claude's review here" style="width:100%;height:100px;box-sizing:border-box;margin-top:8px"></textarea>
+ <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button onclick="copyPacket('${d}')">Copy day for Claude</button><button onclick="savePasted('${d}')">Save pasted review</button></div><div id="cpm-${d}" class="mu" style="margin-top:8px"></div></div>`}
 function renderJournal(){const ds=Object.keys(reviews).sort().reverse();if(!ds.length){$('jr').innerHTML='<div class="mu" style="padding:12px">Load a trade CSV first. A log is created automatically for each trading day.</div>';return}
  if(!jrInit){jrOpen.add(ds[0]);jrInit=true}
- $('jr').innerHTML=`<h2 style="margin:0">Daily log</h2><div class="mu" style="margin:4px 0 12px">${ds.length} trading days | total net ${usd(ds.reduce((a,d)=>a+reviews[d].net,0))} | created automatically from your uploads and saved online | <b style="color:${aiOn&&aiOn.key?'#26a69a':'#ef5350'}">AI review: ${aiOn==null?'checking...':aiOn.key?'ready':'not set up (add ANTHROPIC_API_KEY in Render, Environment)'}</b></div>`+
- ds.map(d=>{const r=reviews[d],pc=r.checks.filter(c=>c.ok).length;return `<details class="rv" ${jrOpen.has(d)?'open':''} ontoggle="toggleJ('${d}',this.open)"><summary><b style="min-width:150px">${dlab(d)}</b><b class="${r.net>=0?'w':'l'}" style="min-width:90px">${usd(r.net)}</b><span class="mu">${r.n} trades | win ${(r.wr*100).toFixed(0)}% | PF ${r.pf==null?'-':r.pf.toFixed(2)} | checks ${pc}/${r.checks.length}</span>${r.ai?'<span class="chip on">AI review</span>':''}${r.mine?'<span class="chip">my note</span>':''}</summary><div class="rb">${jrBody(d,r)}</div></details>`}).join('')}
-async function showJournal(){syncNote();sumOn=false;['chart','det','note','sum'].forEach(x=>$(x).style.display='none');$('jr').style.display='block';$('jr').innerHTML='<div class="mu" style="padding:12px">Building the daily log...</div>';await syncReviews();renderJournal();try{aiOn=await(await fetch('/api/ai_status',{method:'POST',body:'{}'})).json();renderJournal()}catch(e){}st('Daily log | one entry per trading day, saved online')}
+ $('jr').innerHTML=`<h2 style="margin:0">Daily log</h2><div class="mu" style="margin:4px 0 12px">${ds.length} trading days | total net ${usd(ds.reduce((a,d)=>a+reviews[d].net,0))} | created automatically from your uploads and saved online | <b style="color:${aiOn&&aiOn.key?'#26a69a':'#ef5350'}">AI review: ${aiOn==null?'checking...':aiOn.key?'ready':'not set up (add ANTHROPIC_API_KEY in Render, Environment)'}</b></div>${jrStrip(ds)}`+
+ ds.map(d=>{const r=reviews[d],pc=r.checks.filter(c=>c.ok).length;return `<details class="rv" id="jd-${d}" ${jrOpen.has(d)?'open':''} ontoggle="toggleJ('${d}',this.open)"><summary><b style="min-width:150px">${dlab(d)}</b><b class="${r.net>=0?'w':'l'}" style="min-width:90px;font-size:16px">${usd(r.net)}</b>${spark(d)}<span class="mu">${r.n} trades | ${r.w}W ${r.l}L | ${Math.round(r.avgSz*r.n)} contracts | win ${(r.wr*100).toFixed(0)}% | PF ${r.pf==null?'-':r.pf.toFixed(2)} | checks ${pc}/${r.checks.length}</span>${r.ai?'<span class="chip on">AI review</span>':''}${r.mine?'<span class="chip">my note</span>':''}</summary><div class="rb">${jrBody(d,r)}</div></details>`}).join('')}
+async function showJournal(){syncNote();setView('daily');$('jr').innerHTML='<div class="mu" style="padding:12px">Building the daily log...</div>';await syncReviews();renderJournal();try{aiOn=await(await fetch('/api/ai_status',{method:'POST',body:'{}'})).json();renderJournal()}catch(e){}st('Daily log | one entry per trading day, saved online')}
+let dashRange='all',curView='dash',eqD=null;
+function setView(v){curView=v;sumOn=v=='summary';const tr=v=='trades',dp=(id,on,k)=>{$(id).style.display=on?k:'none'};
+ dp('dash',v=='dash','block');dp('jr',v=='daily','block');dp('sum',v=='summary','block');dp('chart',tr,'block');dp('det',tr,'grid');dp('note',tr,'flex');dp('left',tr,'flex');dp('bar',tr,'flex');
+ if(typeof document!='undefined'&&document.querySelectorAll)document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('act',b.dataset.v==v))}
+function showDash(){flt.day='all';setView('dash');renderDash();st('')}
+function showTrades(){const v=view();if(!v.length){setView('trades');renderList();st(trades.length?'No trades match the filters.':'Load a trade CSV first.',1);return}show(sel>=0&&v.includes(sel)?sel:v[0])}
+function needKey(){$('setp').style.display='flex';st('Enter your TopstepX username and API key in the Settings panel, then try again.',1)}
+function toggleSet(){const p=$('setp');p.style.display=p.style.display=='flex'?'none':'flex'}
+if(typeof document!='undefined')document.addEventListener('click',e=>{const p=$('setp');if(p&&p.style.display=='flex'&&!p.contains(e.target)&&e.target.id!='setb')p.style.display='none'});
+function dashSet(v){dashRange=v;renderDash()}
+function openDayLog(d){jrOpen.add(d);jrInit=true;showJournal();if(typeof document!='undefined')setTimeout(()=>{const e=document.getElementById('jd-'+d);e&&e.scrollIntoView({behavior:'smooth',block:'start'})},350)}
+function dashData(){const v=view().map(i=>trades[i]),ds=[...new Set(v.map(t=>t.day))].sort(),keep=dashRange=='all'?ds:ds.slice(-(+dashRange));return v.filter(t=>keep.includes(t.day)).sort((a,b)=>a.et-b.et)}
+function ringSvg(parts,size){const r=34,C=2*Math.PI*r,tot=parts.reduce((a,p)=>a+p[0],0);let acc=0,segs='';
+ if(tot>0)parts.forEach(([v,c])=>{if(v<=0)return;const d=C*v/tot;segs+=`<circle class="rseg" cx="45" cy="45" r="${r}" fill="none" stroke="${c}" stroke-width="9" stroke-dasharray="0 ${C.toFixed(1)}" data-d="${d.toFixed(1)}" data-c="${C.toFixed(1)}" stroke-dashoffset="${(-acc).toFixed(1)}"/>`;acc+=d});
+ return `<svg width="${size}" height="${size}" viewBox="0 0 90 90" style="flex:none" aria-hidden="true"><g transform="rotate(-90 45 45)"><circle cx="45" cy="45" r="${r}" fill="none" stroke="#232938" stroke-width="9"/>${segs}</g></svg>`}
+function animateDash(q){if(typeof document=='undefined'||!document.querySelectorAll)return;if(q){document.querySelectorAll('#dash .rseg').forEach(c=>c.setAttribute('stroke-dasharray',c.dataset.d+' '+(c.dataset.c-c.dataset.d)));return}
+ requestAnimationFrame(()=>document.querySelectorAll('#dash .rseg').forEach(c=>c.setAttribute('stroke-dasharray',c.dataset.d+' '+(c.dataset.c-c.dataset.d))));
+ document.querySelectorAll('#dash .cu').forEach(e=>{const to=+e.dataset.to,f=e.dataset.f,t0=performance.now(),fm=v=>f=='usd'?usd(v):f=='pct'?v.toFixed(0)+'%':v.toFixed(2),step=t=>{const k=Math.min(1,(t-t0)/700);e.textContent=fm(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)})}
+const usdk=v=>(v<0?'-':'')+'$'+Math.abs(Math.round(v)),dshort=k=>new Date(k+'T00:00:00Z').toLocaleDateString('en-GB',{timeZone:'UTC',day:'numeric',month:'short'});
+function gridY(L,PW,mn,mx,Y){const raw=(mx-mn)/4,mag=10**Math.floor(Math.log10(raw)),stp=[1,2,5,10].map(q=>q*mag).find(q=>q>=raw);let g='';for(let v=Math.ceil(mn/stp)*stp;v<=mx+1e-9;v+=stp)g+=`<line x1="${L}" x2="${L+PW}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${Math.abs(v)<1e-9?'#6b7389':'#1c2230'}" ${Math.abs(v)<1e-9?'stroke-dasharray="4 4"':''}/><text x="${L-8}" y="${(Y(v)+4).toFixed(1)}" font-size="11" fill="#9aa3b8" text-anchor="end">${usdk(v)}</text>`;return g}
+function eqSvg(a){const n=a.length,VW=620,VH=270,L=56,R=14,T=14,B=34,PW=VW-L-R,PH=VH-T-B;let c=0;const pts=[0,...a.map(t=>c+=net(t))],mn0=Math.min(...pts),mx0=Math.max(...pts),rg=(mx0-mn0)||1,mn=mn0-rg*.08,mx=mx0+rg*.12,
+  X=i=>L+i/Math.max(1,n)*PW,Y=v=>T+PH-(v-mn)/(mx-mn)*PH,col=pts[n]>=0?'#26a69a':'#ef5350',line=pts.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');eqD={n,pts,a,VW,VH,L,PW,T,PH,mn,mx};
+ let sep='',st0=0;for(let i=1;i<=n;i++)if(i==n||a[i].day!=a[i-1].day){const mid=(st0+i)/2;sep+=(st0>0?`<line x1="${X(st0).toFixed(1)}" x2="${X(st0).toFixed(1)}" y1="${T}" y2="${T+PH}" stroke="#232938" stroke-dasharray="2 4"/>`:'');
+  sep+=`<text x="${X(mid).toFixed(1)}" y="${VH-12}" font-size="11" fill="#9aa3b8" text-anchor="middle">${dshort(a[i-1].day)}</text>`;st0=i}
+ return `<svg id="eqs" viewBox="0 0 ${VW} ${VH}" width="100%" style="display:block"><rect width="${VW}" height="${VH}" fill="none"/>${gridY(L,PW,mn,mx,Y)}${sep}<polygon points="${X(0).toFixed(1)},${Y(0).toFixed(1)} ${line} ${X(n).toFixed(1)},${Y(0).toFixed(1)}" fill="${col}" fill-opacity=".14"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/>
+ <line id="eql" y1="${T}" y2="${T+PH}" stroke="#6b7389" stroke-dasharray="3 3" style="display:none"/><circle id="eqd" r="4.6" fill="${col}" stroke="#fff" stroke-width="1.5" style="display:none"/><rect x="${L}" y="${T}" width="${PW}" height="${PH}" fill="transparent" onmousemove="eqHover(event)" onmouseleave="eqOut()"/></svg>`}
+function eqHover(ev){const d=eqD;if(!d)return;const s=$('eqs'),r=s.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*d.VW,i=Math.max(0,Math.min(d.n,Math.round((x-d.L)/d.PW*d.n))),px=d.L+i/Math.max(1,d.n)*d.PW,py=d.T+d.PH-(d.pts[i]-d.mn)/(d.mx-d.mn)*d.PH,t=i?d.a[i-1]:null,l=$('eql'),c=$('eqd'),tp=$('eqt');
+ l.setAttribute('x1',px);l.setAttribute('x2',px);l.style.display='';c.setAttribute('cx',px);c.setAttribute('cy',py);c.style.display='';
+ tp.style.display='block';tp.innerHTML=t?`<b>Trade ${i} of ${d.n}</b><br>${fmt(t.xt)}<br>${t.long?'LONG':'SHORT'} x${t.size||1}: <b class="${net(t)>=0?'w':'l'}">${usd(net(t))}</b><br>Cumulative: <b class="${d.pts[i]>=0?'w':'l'}">${usd(d.pts[i])}</b>`:'<b>Start of period</b><br>Cumulative: $0';
+ tp.style.left=Math.min(px/d.VW*r.width+14,r.width-190)+'px';tp.style.top=Math.max(0,py/d.VH*r.height-64)+'px'}
+function eqOut(){['eql','eqd','eqt'].forEach(k=>$(k).style.display='none')}
+function barsSvg(dk,by){const VW=620,VH=270,L=56,R=14,T=14,B=34,PW=VW-L-R,PH=VH-T-B,vals=dk.map(k=>by[k].s),mx0=Math.max(0,...vals),mn0=Math.min(0,...vals),rg=(mx0-mn0)||1,mx=mx0+rg*.14,mn=mn0-rg*.14,Y=v=>T+PH-(v-mn)/(mx-mn)*PH,bw=PW/dk.length,w=Math.min(46,bw*.64),lab=dk.length<=12;
+ return `<svg viewBox="0 0 ${VW} ${VH}" width="100%" style="display:block">${gridY(L,PW,mn,mx,Y)}`+dk.map((k,i)=>{const o=by[k],x=L+bw*i+(bw-w)/2,y0=Y(0),y1=Y(o.s),c=o.s>=0?'#26a69a':'#ef5350',ty=o.s>=0?y1-5:y1+13;
+  return `<g class="bb" onclick="openDayLog('${k}')"><rect x="${x.toFixed(1)}" y="${Math.min(y0,y1).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(Math.abs(y1-y0),2).toFixed(1)}" rx="3" fill="${c}"/>${lab?`<text x="${(x+w/2).toFixed(1)}" y="${ty.toFixed(1)}" font-size="10.5" fill="${c}" text-anchor="middle">${usdk(o.s)}</text>`:''}<text x="${(x+w/2).toFixed(1)}" y="${VH-12}" font-size="11" fill="#9aa3b8" text-anchor="middle">${dk.length>16&&i%2?'':dshort(k)}</text><title>${dlab(k)}: ${usd(o.s)} | ${o.n} trades | ${(o.w/o.n*100).toFixed(0)}% win</title></g>`}).join('')+'</svg>'}
+function spark(d){const P=dayTrades(d).map(net);let c=0;const pts=[0,...P.map(v=>c+=v)],mn=Math.min(...pts),mx=Math.max(...pts),W=150,H=38,rg=(mx-mn)||1,X=i=>i/(pts.length-1||1)*W,Y=v=>H-3-(v-mn)/rg*(H-6),col=pts[pts.length-1]>=0?'#26a69a':'#ef5350',ln=pts.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+ return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polygon points="0,${H} ${ln} ${W},${H}" fill="${col}" fill-opacity=".15"/><polyline points="${ln}" fill="none" stroke="${col}" stroke-width="1.8"/></svg>`}
+const jrStrip=ds=>{const v=ds.map(d=>reviews[d].net),tot=v.reduce((a,b)=>a+b,0),c=(l,x,k)=>`<span class="chip2"><span class="mu">${l}</span> <b class="${k||''}">${x}</b></span>`;
+ return `<div class="strip">${c('Total net',usd(tot),tot>=0?'w':'l')}${c('Green days',v.filter(x=>x>0).length,'w')}${c('Red days',v.filter(x=>x<0).length,'l')}${c('Avg day',usd(tot/ds.length),tot>=0?'w':'l')}${c('Best day',usd(Math.max(...v)),'w')}${c('Worst day',usd(Math.min(...v)),'l')}</div>`};
+function renderDash(quiet){const box=$('dash');
+ if(!trades.length){box.innerHTML='<div class="cd2" style="text-align:center;padding:64px 20px"><div style="font-size:22px;font-weight:700;margin-bottom:10px">Welcome to your trading journal</div><div class="mu" style="font-size:14px;line-height:1.8">Click <b>Upload CSV</b> in the top right to load your trade report,<br>or open one from <b>Saved logs</b>.<br>Your dashboard, daily log and charts will appear here.</div></div>';return}
+ const a=dashData(),n=a.length,fa=view().length,rch=[['all','All time'],['5','Last 5 days'],['10','Last 10 days'],['20','Last 20 days']].map(([v,l])=>`<span class="chip ${String(dashRange)==v?'on':''}" onclick="dashSet('${v}')">${l}</span>`).join('');
+ if(!n){box.innerHTML=`<div class="dh2"><h2 style="margin:0">Dashboard</h2><div style="display:flex;gap:8px">${rch}</div></div><div class="note2">No trades match the current filters. <button onclick="flt={res:'all',side:'all',day:'all',time:'all',size:'all',sort:'t'};renderList();renderDash()">Reset filters</button></div>`;return}
+ const P=a.map(net),sm=x=>x.reduce((p,q)=>p+q,0),W=P.filter(x=>x>0),Lo=P.filter(x=>x<0),be=n-W.length-Lo.length,gw=sm(W),gl=sm(Lo),aW=W.length?gw/W.length:0,aL=Lo.length?gl/Lo.length:0,pf=Lo.length?gw/-gl:null,tot=sm(P),by={};
+ a.forEach(t=>{const o=by[t.day]??={n:0,w:0,s:0};o.n++;o.s+=net(t);if(net(t)>0)o.w++});const dk=Object.keys(by).sort(),gd=dk.filter(k=>by[k].s>0).length,rd=dk.filter(k=>by[k].s<0).length,ratio=aL<0&&aW>0?aW/-aL:null,mxA=Math.max(aW,-aL,1),
+  cu=(to,f,txt,cls)=>`<div class="kv ${cls||''} cu" data-to="${to}" data-f="${f}">${txt}</div>`,pc=x=>(x*100).toFixed(0)+'%',
+  K=`<div class="kg"><div class="kp"><div><div class="kl">Net P&amp;L</div>${cu(tot,'usd',usd(tot),tot>=0?'w':'l')}<div class="ks">${n} trades | ${dk.length} days</div></div></div>
+  <div class="kp"><div><div class="kl">Trade win %</div>${cu(W.length/n*100,'pct',pc(W.length/n))}<div class="ks"><span class="w">${W.length}W</span> / <span class="l">${Lo.length}L</span>${be?` / ${be} BE`:''}</div></div>${ringSvg([[W.length,'#26a69a'],[be,'#6b7389'],[Lo.length,'#ef5350']],84)}</div>
+  <div class="kp"><div><div class="kl">Profit factor</div>${pf==null?`<div class="kv">${gw>0?'&infin;':'-'}</div>`:cu(pf,'x',pf.toFixed(2),pf>=1?'w':'l')}<div class="ks">${usd(gw)} won / ${usd(gl)} lost</div></div>${ringSvg([[gw,'#26a69a'],[-gl,'#ef5350']],84)}</div>
+  <div class="kp"><div><div class="kl">Day win %</div>${cu(gd/dk.length*100,'pct',pc(gd/dk.length))}<div class="ks"><span class="w">${gd} green</span> / <span class="l">${rd} red</span> days</div></div>${ringSvg([[gd,'#26a69a'],[dk.length-gd-rd,'#6b7389'],[rd,'#ef5350']],84)}</div>
+  <div class="kp" style="display:block"><div class="kl">Avg win / avg loss</div>${ratio==null?'<div class="kv">-</div>':cu(ratio,'x',ratio.toFixed(2),ratio>=1?'w':'l')}<div style="margin:8px 0 6px"><div class="hb"><span style="width:${aW/mxA*100}%;background:#26a69a"></span></div><div class="hb"><span style="width:${-aL/mxA*100}%;background:#ef5350"></span></div></div><div class="ks"><span class="w">${usd(aW)}</span> / <span class="l">${usd(aL)}</span></div></div></div>`,
+  S_=sessData(a),sessRows=SBD.slice().sort((p,q)=>p[1]-q[1]).map(([nm])=>{const q=S_[nm],mx=Math.max(1,...TB.map(b=>Math.abs(S_[b].s)));return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #1c2230;font-size:13px"><span style="width:128px">${nm}</span><span class="mu" style="width:68px">${q.n} trades</span><span class="mu" style="width:56px">${q.n?pc(q.w/q.n):'-'}</span><span style="flex:1"><span class="hb" style="margin:0"><span style="width:${Math.abs(q.s)/mx*100}%;background:${q.s>=0?'#26a69a':'#ef5350'}"></span></span></span><b class="${q.s>=0?'w':'l'}" style="width:84px;text-align:right">${usd(q.s)}</b></div>`}).join(''),
+  ld=dk[dk.length-1],rv=reviews[ld],fails=rv?rv.checks.filter(c=>!c.ok):[],
+  rec=a.slice(-8).reverse().map(t=>`<tr class="cl" onclick="show(${trades.indexOf(t)})"><td>${fmt(t.xt)}</td><td><span class="chip">${t.long?'LONG':'SHORT'}</span></td><td>${t.size||1}</td><td class="${net(t)>=0?'w':'l'}"><b>${usd(net(t))}</b></td></tr>`).join('');
+ box.innerHTML=`<div class="dh2"><div><h2 style="margin:0">Dashboard</h2><div class="mu" style="margin-top:4px">${csvName} | ${dk.length} trading days | ${n} trades</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${rch}</div></div>
+ ${fa!=trades.length?`<div class="note2">Trade filters are active (${fa} of ${trades.length} trades included). <button onclick="flt={res:'all',side:'all',day:'all',time:'all',size:'all',sort:'t'};renderList();renderDash()">Reset filters</button></div>`:''}${K}
+ <div class="gc"><div class="cd2"><h3>Cumulative P&amp;L <span class="mu">(hover for details)</span></h3><div class="eqw">${eqSvg(a)}<div id="eqt" class="tip"></div></div></div><div class="cd2"><h3>Daily net P&amp;L <span class="mu">(click a bar to open that day)</span></h3>${barsSvg(dk,by)}</div></div>
+ <div style="margin-bottom:14px">${calHtml(by,'openDayLog')}</div>
+ <div class="g3"><div class="cd2"><h3>By session <span class="mu">(New York time)</span></h3>${sessRows}</div>
+ <div class="cd2"><h3>Latest day: ${dshort(ld)}</h3>${rv?`<div style="font-size:22px;font-weight:700" class="${rv.net>=0?'w':'l'}">${usd(rv.net)}</div><div class="mu" style="margin:4px 0 8px">${rv.n} trades | discipline checks ${rv.checks.filter(c=>c.ok).length} of ${rv.checks.length} passed</div>${fails.slice(0,3).map(c=>`<div style="font-size:13px;padding:4px 0"><b class="l">CHECK</b> ${esc(c.label)}</div>`).join('')||'<div class="w" style="font-size:13px">All checks passed</div>'}`:'<div class="mu">The daily log is still being built...</div>'}<div style="margin-top:12px"><button onclick="openDayLog('${ld}')">Open daily log</button></div></div>
+ <div class="cd2"><h3>Recent trades</h3><table class="rt"><tr><th>When (${$('disptz').value=='Asia/Kolkata'?'IST':$('disptz').value.split('/').pop()})</th><th>Side</th><th>Size</th><th>Net</th></tr>${rec}</table></div></div>`;animateDash(quiet)}
 let scSel={d:'all',r:'auto',l:'stack',dot:true};
 const SBD=[['Overnight / Asia / London',0,930],['NY open',930,1020],['Midday',1020,1200],['NY afternoon',1200,1380]];
 function sessData(a){const o={};TB.forEach(b=>o[b]={n:0,w:0,sw:0,sl:0,s:0,z:0});a.forEach(t=>{const x=o[bucket(t)],v=net(t);x.n++;x.s+=v;x.z+=(+t.size||1);if(v>0){x.w++;x.sw+=v}else if(v<0)x.sl+=v});return o}
@@ -638,13 +735,14 @@ function renderSession(){const box=$('scbox');if(!box)return;const dsel=$('scd')
 function scPng(){const svg=$('scbox').querySelector('svg');if(!svg)return;const w=+svg.dataset.w*2,h=+svg.dataset.h*2,cl=svg.cloneNode(true);cl.setAttribute('width',w);cl.setAttribute('height',h);
  const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);nS=nR=0;save('session_chart.png',c.toDataURL('image/png')).then(()=>st('Saved'+(nR?' (replaced old file)':'')+': '+lastFile)).catch(e=>st(e.message,1))};
  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(cl))}
-function calHtml(bd){const ks=Object.keys(bd).sort();if(!ks.length)return'';const mx=Math.max(1,...ks.map(k=>Math.abs(bd[k].s))),p2=n=>String(n).padStart(2,'0'),mon=[...new Set(ks.map(k=>k.slice(0,7)))],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
- return '<div class="c2" style="margin-bottom:12px"><div class="mu">Calendar (click a day to open its trades)</div>'+mon.map(m=>{const [Y,M]=m.split('-').map(Number),dim=new Date(Date.UTC(Y,M,0)).getUTCDate(),lead=(new Date(Date.UTC(Y,M-1,1)).getUTCDay()+6)%7,cells=Array(lead).fill(null);
+function calHtml(bd,fn){fn=fn||'gotoDay';const ks=Object.keys(bd).sort();if(!ks.length)return'';const mx=Math.max(1,...ks.map(k=>Math.abs(bd[k].s))),p2=n=>String(n).padStart(2,'0'),mon=[...new Set(ks.map(k=>k.slice(0,7)))],MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+ return '<div class="c2" style="margin-bottom:12px"><div class="mu">Calendar (click a day to open its '+(fn=='gotoDay'?'trades':'daily log')+')</div>'+mon.map(m=>{const [Y,M]=m.split('-').map(Number),dim=new Date(Date.UTC(Y,M,0)).getUTCDate(),lead=(new Date(Date.UTC(Y,M-1,1)).getUTCDay()+6)%7,cells=Array(lead).fill(null);
   for(let d=1;d<=dim;d++)cells.push(d);while(cells.length%7)cells.push(null);let mt=0;ks.filter(k=>k.startsWith(m)).forEach(k=>mt+=bd[k].s);
   let h=`<div style="margin:12px 0 6px"><b>${MN[M-1]} ${Y}</b> <span class="${mt>=0?'w':'l'}" style="margin-left:10px">${usd(mt)}</span></div><div style="overflow-x:auto"><div class="cal">`+['Mon','Tue','Wed','Thu','Fri','Sat','Sun','Week'].map(x=>`<div class="ch">${x}</div>`).join('');
-  for(let i=0;i<cells.length;i+=7){let wt=0,wn=0;
+  const nw=cells.length/7,hasW=w=>cells.slice(w*7,w*7+7).some(d=>d&&bd[m+'-'+p2(d)]);let w0=0,w1=nw-1;while(w0<w1&&!hasW(w0))w0++;while(w1>w0&&!hasW(w1))w1--;
+  for(let i=w0*7;i<(w1+1)*7;i+=7){let wt=0,wn=0;
    for(let j=0;j<7;j++){const d=cells[i+j];if(!d){h+='<div class="cd" style="opacity:.35"></div>';continue}const k=m+'-'+p2(d),o=bd[k];
-    if(o){wt+=o.s;wn+=o.n;const a=(.18+.5*Math.abs(o.s)/mx).toFixed(2);h+=`<div class="cd has" onclick="gotoDay('${k}')" style="background:${o.s>=0?`rgba(38,166,154,${a})`:`rgba(239,83,80,${a})`}"><span class="dn">${d}</span><b>${usd(o.s)}</b>${o.n} trade${o.n>1?'s':''} | ${(o.w/o.n*100).toFixed(0)}% win</div>`}
+    if(o){wt+=o.s;wn+=o.n;const a=(.18+.5*Math.abs(o.s)/mx).toFixed(2);h+=`<div class="cd has" onclick="${fn}('${k}')" style="background:${o.s>=0?`rgba(38,166,154,${a})`:`rgba(239,83,80,${a})`}"><span class="dn">${d}</span><b>${usd(o.s)}</b>${o.n} trade${o.n>1?'s':''} | ${(o.w/o.n*100).toFixed(0)}% win</div>`}
     else h+=`<div class="cd"><span class="dn">${d}</span></div>`}
    h+=`<div class="cd" style="background:#141a26">${wn?`<b class="${wt>=0?'w':'l'}">${usd(wt)}</b>${wn} trades`:''}</div>`}
   return h+'</div></div>'}).join('')+'</div>'}
@@ -658,7 +756,7 @@ function sizeHtml(S){const sz=Object.keys(S.bySize).map(Number).sort((a,b)=>a-b)
 function showSummary(){sumOn=true;syncNote();const v=view(),S=stats(v),pc=x=>(x*100).toFixed(0)+'%',D=Object.entries(S.byDay).sort(),bs=D.slice().sort((a,b)=>b[1].s-a[1].s),
  mx=Math.max(1,...D.map(x=>Math.abs(x[1].s)),...Object.values(S.byT).map(x=>Math.abs(x.s))),card=(a,b,c)=>`<div class="c2"><span class="mu">${a}</span><b class="${c||''}" style="font-size:22px">${b}</b></div>`,
  row=(lab,o,ck)=>`<div class="sr" ${ck?`onclick="${ck}"`:''}><span style="width:150px">${lab}</span><span class="mu" style="width:80px">${o.n} trades</span><span class="mu" style="width:80px">Win ${pc(o.w/o.n)}</span><span style="flex:1"><span style="display:block;height:12px;width:${Math.abs(o.s)/mx*100}%;background:${o.s>=0?'#26a69a':'#ef5350'};border-radius:3px"></span></span><b class="${o.s>=0?'w':'l'}" style="width:100px;text-align:right">${usd(o.s)}</b></div>`;
- ['chart','det','note'].forEach(x=>$(x).style.display='none');$('jr').style.display='none';$('sum').style.display='block';
+ setView('summary');
  $('sum').innerHTML=`<h2 style="margin:0">Summary</h2><div class="mu">${S.n} trades currently shown in the list (use the filters on the left to change this)${flt.day!='all'?` | only ${dlab(flt.day)} <button onclick="backToSummary()" style="margin-left:8px">Show all days</button>`:''}</div><div class="cg">${card('Net',usd(S.net),S.net>=0?'w':'l')}${card('Win rate',pc(S.wr))}${card('Trades',S.n)}${card('Avg win',usd(S.aw),'w')}${card('Avg loss',usd(S.al),'l')}${card('Profit factor',isFinite(S.pf)?S.pf.toFixed(2):'-')}${card('Best day',bs.length?usd(bs[0][1].s):'-','w')}${card('Worst day',bs.length?usd(bs[bs.length-1][1].s):'-','l')}</div>
  <div class="c2" style="margin-bottom:12px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><b>Session chart</b><select id="scd" onchange="renderSession()"><option value="all">All days</option>${D.map(([d])=>`<option value="${d}">${dlab(d)}</option>`).join('')}</select><select id="scr" onchange="renderSession()"><option value="auto">Zoom to my trades</option><option value="full">Full trading day (18:00-17:00 NY)</option><option value="us">US hours (09:30-17:00 NY)</option></select><select id="scl" onchange="renderSession()"><option value="stack">Two panels (cleaner)</option><option value="overlay">One panel (overlay)</option></select><label class="mu" style="flex-direction:row;align-items:center;gap:4px"><input id="scdot" type="checkbox" checked onchange="renderSession()"> Trade dots</label><button onclick="scPng()">Save chart as PNG</button></div><div id="scbox"></div></div>${calHtml(S.byDay)}<div class="c2" style="padding:0"><div class="mu" style="padding:10px 12px">Day-end net (click a day to open its trades)</div>${D.map(([d,o])=>row(dlab(d),o,`gotoDay('${d}')`)).join('')}</div>
  <div class="c2" style="padding:0;margin-top:12px"><div class="mu" style="padding:10px 12px">By time of day (New York time)</div>${TB.filter(b=>S.byT[b]).map(b=>row(b,S.byT[b])).join('')}</div>
@@ -688,13 +786,13 @@ $('cup').oninput=$('cdn').oninput=()=>{$('cpre').value='';applyColors()};
 let sv=['#26a69a','#ef5350'];try{const x=(localStorage.cc||'').split(',');if(x.length==2)sv=x}catch(e){}
 $('cup').value=sv[0];$('cdn').value=sv[1];
 $('cpre').value=Object.keys(CP).find(k=>CP[k][0]==sv[0]&&CP[k][1]==sv[1])||'';
-async function openCsv(x,name){csvName=name;try{load(x);notes=await(await fetch('/api/notes_get',{method:'POST',body:JSON.stringify({folder:csvName})})).json();if(notes.error)notes={};flt={res:'all',side:'all',day:'all',time:'all',size:'all',sort:'t'};sel=-1;renderList();st(trades.length+' trades loaded | Total net '+usd(trades.reduce((a,t)=>a+net(t),0))+' | '+tznote);syncReviews();if(trades.length)show(0);return true}catch(er){st(er.message,1);return false}}
+async function openCsv(x,name){csvName=name;try{load(x);notes=await(await fetch('/api/notes_get',{method:'POST',body:JSON.stringify({folder:csvName})})).json();if(notes.error)notes={};flt={res:'all',side:'all',day:'all',time:'all',size:'all',sort:'t'};sel=-1;renderList();st(trades.length+' trades loaded | Total net '+usd(trades.reduce((a,t)=>a+net(t),0))+' | '+tznote);syncReviews();if(trades.length)showDash();return true}catch(er){st(er.message,1);return false}}
 let logNames=[];
 function renderLogs(){$('slogm').innerHTML=logNames.length?logNames.map((n,i)=>`<div class="lr"><span class="ln" onclick="pickLog(${i})">${esc(n)}</span><span class="lx" title="Delete this saved file" onclick="delLog(${i})">&#10005;</span></div>`).join(''):'<div class="lr mu">Nothing saved yet</div>'}
 async function loadLogs(){try{const r=await(await fetch('/api/log_list',{method:'POST',body:'{}'})).json();logNames=r.names||[];renderLogs()}catch(e){}}
 $('slogb').onclick=e=>{e.stopPropagation();const m=$('slogm');m.style.display=m.style.display=='block'?'none':'block'};
 $('slogm').onclick=e=>e.stopPropagation();document.addEventListener('click',()=>{$('slogm').style.display='none'});
-async function pickLog(i){$('slogm').style.display='none';const n=logNames[i];if(needLogin()){st('Enter username and API key first.',1);return}
+async function pickLog(i){$('slogm').style.display='none';const n=logNames[i];if(needLogin()){needKey();return}
  const r=await(await fetch('/api/log_get',{method:'POST',body:JSON.stringify({name:n})})).json();if(r.csv)openCsv(r.csv,n);else st('Could not load that log',1)}
 async function delLog(i){const n=logNames[i];if(!confirm('Delete "'+n+'" from Saved online?'))return;const nt=confirm('Also delete the notes saved for "'+n+'"?\nOK = delete the notes too, Cancel = keep the notes.');
  try{const r=await(await fetch('/api/log_del',{method:'POST',body:JSON.stringify({name:n,notes:nt})})).json();if(r.error)throw new Error(r.error);st('Deleted "'+n+'" from Saved online'+(nt?' (notes deleted too)':''));await loadLogs();$('slogm').style.display='block'}catch(e){st(e.message,1)}}
@@ -719,9 +817,9 @@ async function smartOpen(x,name){const nw=tkeys(x);let best=null,text=x,target=n
 const needLogin=()=>!CLOUD&&(!$('u').value||!$('k').value);
 if(CLOUD){$('u').parentNode.style.display='none';$('k').parentNode.style.display='none';$('lo').style.display='block'}
 $('f').onchange=e=>{const f=e.target.files[0];if(!f)return;
- if(needLogin()){st('Enter username and API key first, then pick the file again.',1);e.target.value='';return}
+ if(needLogin()){needKey();e.target.value='';return}
  f.text().then(async x=>{await smartOpen(x,f.name.replace(/\.csv$/i,'')||'trades')})};
-loadLogs();
+loadLogs();setView('dash');renderDash();
 </script></body></html>"""
 
 if __name__ == "__main__":
@@ -739,7 +837,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v21 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v23 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
