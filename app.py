@@ -85,14 +85,26 @@ AUTH, CONTRACTS = {}, []
 
 
 def login(u, k):
+    u, k = (u or "").strip().strip("\"'"), (k or "").strip().strip("\"'")
     c = AUTH.get(u)
     if c and c[2] == k and time.time() - c[1] < 1200:
         return c[0]
     d = S.post(BASE + "/api/Auth/loginKey", json={"userName": u, "apiKey": k}, timeout=20).json()
     if not d.get("success"):
-        raise Exception("Login failed: " + str(d.get("errorMessage") or d))
+        raise Exception(f"TopstepX did not accept the login (errorCode {d.get('errorCode')}). Check TOPSTEPX_USERNAME and TOPSTEPX_API_KEY "
+                        "(in Render: Environment tab). If you created a new API key, the old one no longer works and the new one must be saved there.")
     AUTH[u] = (d["token"], time.time(), k)
     return d["token"]
+
+
+def ts_status(b):
+    info = {"username_set": bool(os.environ.get("TOPSTEPX_USERNAME")), "key_set": bool(os.environ.get("TOPSTEPX_API_KEY"))}
+    try:
+        login(os.environ.get("TOPSTEPX_USERNAME") or b.get("username", ""), os.environ.get("TOPSTEPX_API_KEY") or b.get("apiKey", ""))
+        info["ok"] = True
+    except Exception as e:
+        info["ok"], info["error"] = False, str(e)
+    return info
 
 
 def api(path, tok, body):
@@ -328,6 +340,8 @@ class H(BaseHTTPRequestHandler):
             b = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             if self.path == "/api/save":
                 return self.send(200, json.dumps(save_png(b)).encode(), "application/json")
+            if self.path == "/api/ts_status":
+                return self.send(200, json.dumps(ts_status(b)).encode(), "application/json")
             if self.path.startswith("/api/review_") or self.path.startswith("/api/ai_"):
                 return self.send(200, json.dumps(rev_api(self.path, b)).encode(), "application/json")
             if self.path.startswith("/api/log_"):
@@ -363,7 +377,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v23</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v24</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -425,7 +439,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <div class="topr"><div style="position:relative"><button id="slogb" type="button">Saved logs &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:50;top:100%;right:0;margin-top:6px;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:8px"></div></div>
 <label class="btn">Upload CSV<input id="f" type="file" accept=".csv" hidden></label>
 <button id="setb" type="button" onclick="toggleSet()">&#9881; Settings</button>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v23</div></div>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v24</div></div>
 </header>
 <div id="setp">
 <label>TopstepX username<input id="u" autocomplete="off"></label>
@@ -435,6 +449,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <label>Candle colours<select id="cpre"></select></label>
 <div style="display:flex;gap:14px"><label>Up<input id="cup" type="color"></label><label>Down<input id="cdn" type="color"></label></div>
 <label>PNG size<select id="psz"><option value="1600x900">Large 1600x900</option><option value="1920x1080" selected>Extra large 1920x1080</option><option value="2560x1440">Huge 2560x1440</option></select></label>
+<button type="button" onclick="testTS()">Test TopstepX connection</button><div id="tsres" class="mu" style="line-height:1.5"></div>
 </div>
 <main><div id="left"><div id="flt"></div><div id="list"><div class="it">Enter login, then choose your CSV.</div></div></div>
 <div id="right"><div id="bar"></div><div id="st"></div><div id="dash"></div><div id="chart" style="display:none"></div><div id="det" style="display:none"></div><div id="note" style="display:none"></div><div id="sum" style="display:none"></div><div id="jr" style="display:none"></div></div></main><div id="toast"></div>
@@ -639,6 +654,11 @@ function setView(v){curView=v;sumOn=v=='summary';const tr=v=='trades',dp=(id,on,
 function showDash(){flt.day='all';setView('dash');renderDash();st('')}
 function showTrades(){const v=view();if(!v.length){setView('trades');renderList();st(trades.length?'No trades match the filters.':'Load a trade CSV first.',1);return}show(sel>=0&&v.includes(sel)?sel:v[0])}
 function needKey(){$('setp').style.display='flex';st('Enter your TopstepX username and API key in the Settings panel, then try again.',1)}
+async function testTS(){const o=$('tsres');o.style.color='#9aa3b8';o.textContent='Testing the connection...';
+ try{const r=await(await fetch('/api/ts_status',{method:'POST',body:JSON.stringify({username:$('u').value.trim(),apiKey:$('k').value.trim()})})).json();
+  if(r.error&&r.ok===undefined){o.style.color='#ef5350';o.textContent=r.error;return}
+  o.style.color=r.ok?'#26a69a':'#ef5350';o.textContent=(r.ok?'Connected to TopstepX.':'Not connected: '+r.error)+(CLOUD?` (saved on the server - username: ${r.username_set?'yes':'MISSING'}, API key: ${r.key_set?'yes':'MISSING'})`:'')}
+ catch(e){o.style.color='#ef5350';o.textContent=e.message}}
 function toggleSet(){const p=$('setp');p.style.display=p.style.display=='flex'?'none':'flex'}
 if(typeof document!='undefined')document.addEventListener('click',e=>{const p=$('setp');if(p&&p.style.display=='flex'&&!p.contains(e.target)&&e.target.id!='setb')p.style.display='none'});
 function dashSet(v){dashRange=v;renderDash()}
@@ -837,7 +857,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v23 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v24 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
