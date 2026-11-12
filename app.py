@@ -253,7 +253,37 @@ def rev_api(path, b):
     return {"error": "unknown"}
 
 
+def log_rename(b):
+    old, new = clean(b["name"]), clean(b.get("new", ""))
+    if not new or new == old:
+        return {"error": "Please type a different name."}
+    if kv_get("log:" + new) is not None:
+        return {"error": f'A saved log called "{new}" already exists.'}
+    v = kv_get("log:" + old)
+    if v is None:
+        return {"error": "That saved log was not found."}
+    kv_set("log:" + new, v)
+    kv_del("log:" + old)
+    if DB_URL:
+        n = kv_get("notes:" + old)
+        if n is not None:
+            kv_set("notes:" + new, n)
+            kv_del("notes:" + old)
+    else:
+        od, nd = os.path.join(ROOT, old), os.path.join(ROOT, new)
+        if os.path.isdir(od) and not os.path.exists(nd):
+            os.rename(od, nd)
+    pre = "review:" + old + ":"
+    for k, val in kv_items(pre).items():
+        if k.startswith(pre):
+            kv_set("review:" + new + ":" + k[len(pre):], val)
+            kv_del(k)
+    return {"ok": True, "name": new}
+
+
 def log_api(path, b):
+    if path == "/api/log_rename":
+        return log_rename(b)
     if path == "/api/log_save":
         kv_set("log:" + clean(b["name"]), b["csv"])
         return {"ok": True}
@@ -377,7 +407,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v24</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v25</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -439,7 +469,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <div class="topr"><div style="position:relative"><button id="slogb" type="button">Saved logs &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:50;top:100%;right:0;margin-top:6px;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:8px"></div></div>
 <label class="btn">Upload CSV<input id="f" type="file" accept=".csv" hidden></label>
 <button id="setb" type="button" onclick="toggleSet()">&#9881; Settings</button>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v24</div></div>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v25</div></div>
 </header>
 <div id="setp">
 <label>TopstepX username<input id="u" autocomplete="off"></label>
@@ -808,31 +838,39 @@ $('cup').value=sv[0];$('cdn').value=sv[1];
 $('cpre').value=Object.keys(CP).find(k=>CP[k][0]==sv[0]&&CP[k][1]==sv[1])||'';
 async function openCsv(x,name){csvName=name;try{load(x);notes=await(await fetch('/api/notes_get',{method:'POST',body:JSON.stringify({folder:csvName})})).json();if(notes.error)notes={};flt={res:'all',side:'all',day:'all',time:'all',size:'all',sort:'t'};sel=-1;renderList();st(trades.length+' trades loaded | Total net '+usd(trades.reduce((a,t)=>a+net(t),0))+' | '+tznote);syncReviews();if(trades.length)showDash();return true}catch(er){st(er.message,1);return false}}
 let logNames=[];
-function renderLogs(){$('slogm').innerHTML=logNames.length?logNames.map((n,i)=>`<div class="lr"><span class="ln" onclick="pickLog(${i})">${esc(n)}</span><span class="lx" title="Delete this saved file" onclick="delLog(${i})">&#10005;</span></div>`).join(''):'<div class="lr mu">Nothing saved yet</div>'}
+function renderLogs(){$('slogm').innerHTML=logNames.length?logNames.map((n,i)=>`<div class="lr"><span class="ln" onclick="pickLog(${i})">${esc(n)}</span><span class="lx" title="Rename (for example to the account name)" onclick="renLog(${i})">&#9998;</span><span class="lx" title="Delete this saved file" onclick="delLog(${i})">&#10005;</span></div>`).join(''):'<div class="lr mu">Nothing saved yet</div>'}
 async function loadLogs(){try{const r=await(await fetch('/api/log_list',{method:'POST',body:'{}'})).json();logNames=r.names||[];renderLogs()}catch(e){}}
 $('slogb').onclick=e=>{e.stopPropagation();const m=$('slogm');m.style.display=m.style.display=='block'?'none':'block'};
 $('slogm').onclick=e=>e.stopPropagation();document.addEventListener('click',()=>{$('slogm').style.display='none'});
 async function pickLog(i){$('slogm').style.display='none';const n=logNames[i];if(needLogin()){needKey();return}
  const r=await(await fetch('/api/log_get',{method:'POST',body:JSON.stringify({name:n})})).json();if(r.csv)openCsv(r.csv,n);else st('Could not load that log',1)}
+async function renLog(i){const n=logNames[i],nn=prompt('New name for this saved log (for example the account name):',n);if(!nn||nn.trim()==n)return;
+ try{const r=await(await fetch('/api/log_rename',{method:'POST',body:JSON.stringify({name:n,new:nn.trim()})})).json();if(r.error)throw new Error(r.error);
+  if(csvName==n){csvName=r.name;if(curView=='dash')renderDash()}toast('Renamed "'+n+'" to "'+r.name+'"');await loadLogs();$('slogm').style.display='block'}catch(e){st(e.message,1);toast(e.message)}}
 async function delLog(i){const n=logNames[i];if(!confirm('Delete "'+n+'" from Saved online?'))return;const nt=confirm('Also delete the notes saved for "'+n+'"?\nOK = delete the notes too, Cancel = keep the notes.');
  try{const r=await(await fetch('/api/log_del',{method:'POST',body:JSON.stringify({name:n,notes:nt})})).json();if(r.error)throw new Error(r.error);st('Deleted "'+n+'" from Saved online'+(nt?' (notes deleted too)':''));await loadLogs();$('slogm').style.display='block'}catch(e){st(e.message,1)}}
 let toastT;function toast(m){const e=$('toast');e.textContent=m;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',12000)}
-function tkeys(text){const r=csv(text);if(!r.length)return{hdr:[],rows:[],keys:[]};const H=r[0].map(x=>x.trim().toLowerCase()),
- f=[['enteredat','exitedat','entryprice','exitprice'],['boughttimestamp','soldtimestamp','buyprice','sellprice']].find(a=>a.every(n=>H.includes(n)));
- if(!f)return{hdr:r[0],rows:r.slice(1),keys:[]};const ix=f.map(n=>H.indexOf(n));
- return{hdr:r[0],rows:r.slice(1),keys:r.slice(1).map(w=>ix.map(i=>(w[i]||'').trim()).join('|'))}}
+function tkeys(text){const r=csv(text);if(!r.length)return{hdr:[],rows:[],keys:[],strong:false};const H=r[0].map(x=>x.trim().toLowerCase()),
+ idc=H.includes('id')?['id']:H.includes('buyfillid')&&H.includes('sellfillid')?['buyfillid','sellfillid']:null,
+ wk=[['enteredat','exitedat','entryprice','exitprice'],['boughttimestamp','soldtimestamp','buyprice','sellprice']].find(a=>a.every(n=>H.includes(n)));
+ if(!wk)return{hdr:r[0],rows:r.slice(1),keys:[],strong:false};
+ const wi=wk.map(n=>H.indexOf(n)),ii=idc?idc.map(n=>H.indexOf(n)):null,
+  keys=r.slice(1).map(w=>{if(ii){const id=ii.map(i=>(w[i]||'').trim());if(id.every(Boolean))return 'id:'+id.join('|')}return wi.map(i=>(w[i]||'').trim()).join('|')});
+ return{hdr:r[0],rows:r.slice(1),keys,strong:!!ii}}
 function toCsv(h,rows){const q=v=>/[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;return [h,...rows].map(r=>r.map(q).join(',')).join('\n')+'\n'}
 async function smartOpen(x,name){const nw=tkeys(x);let best=null,text=x,target=name,msg='';
  if(nw.keys.length){try{await loadLogs();
   const olds=await Promise.all(logNames.map(async n=>({n,csv:(await(await fetch('/api/log_get',{method:'POST',body:JSON.stringify({name:n})})).json()).csv||''})));
   for(const o of olds){const t=tkeys(o.csv),set=new Set(t.keys),ov=nw.keys.filter(k=>set.has(k)).length;if(ov>0&&(!best||ov>best.ov||ov==best.ov&&o.n==name))best={n:o.n,ov,t}}
-  if(!best){const sm=olds.find(o=>o.n==name);if(sm)best={n:name,ov:0,t:tkeys(sm.csv)}}}catch(e){}
+  if(best&&!nw.strong&&best.n!=name&&!confirm(`This file has ${best.ov} trades that look identical to trades in "${best.n}", but it has no trade IDs to prove they are the same trades.\n\nIf it is a DIFFERENT account (for example a copy-trading account), click Cancel to keep it as its own log.\nIf it is the same account with newer trades, click OK to update "${best.n}".`))best=null;
+  const sm=olds.find(o=>o.n==name);
+  if(!best&&sm){if(confirm(`A saved log called "${name}" already exists, but this file has none of the same trades.\n\nIs it the SAME account with newer trades? Click OK to add the trades to "${name}".\nIs it a DIFFERENT account? Click Cancel to save it as a separate log.`))best={n:name,ov:0,t:tkeys(sm.csv)};else{let q=2;while(logNames.includes(name+' ('+q+')'))q++;target=name+' ('+q+')'}}}catch(e){}
   if(best){target=best.n;const lo=h=>JSON.stringify(h.map(v=>v.trim().toLowerCase()));
    if(best.t.keys.length&&lo(nw.hdr)==lo(best.t.hdr)){const have=new Set(nw.keys),keep=best.t.rows.filter((w,i)=>!have.has(best.t.keys[i]));text=toCsv(nw.hdr,[...keep,...nw.rows]);
     msg=`Updated saved log "${target}": ${nw.rows.length} trades from this file + ${keep.length} older trades kept.`}
    else msg=`Updated saved log "${target}" with this file.`;
    if(target!=name)msg=`This file has ${best.ov} trades already in "${target}", so I updated that one instead of adding a new file. `+msg}}
- const ok=await openCsv(text,target);
+ if(!best&&target!=name)msg='Saved as a separate log "'+target+'" because "'+name+'" already holds other trades.';const ok=await openCsv(text,target);
  if(ok&&trades.length){await fetch('/api/log_save',{method:'POST',body:JSON.stringify({name:target,csv:text})});await loadLogs();if(msg)toast(msg)}}
 const needLogin=()=>!CLOUD&&(!$('u').value||!$('k').value);
 if(CLOUD){$('u').parentNode.style.display='none';$('k').parentNode.style.display='none';$('lo').style.display='block'}
@@ -857,7 +895,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v24 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v25 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
