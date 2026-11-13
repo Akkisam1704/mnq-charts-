@@ -407,7 +407,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v26</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v27</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -470,7 +470,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <div class="topr"><div style="position:relative"><button id="slogb" type="button">Saved logs &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:50;top:100%;right:0;margin-top:6px;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:8px"></div></div>
 <label class="btn">Upload CSV<input id="f" type="file" accept=".csv" hidden></label>
 <button id="setb" type="button" onclick="toggleSet()">&#9881; Settings</button>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v26</div></div>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v27</div></div>
 </header>
 <div id="setp">
 <label>TopstepX username<input id="u" autocomplete="off"></label>
@@ -610,7 +610,7 @@ function gotoDay(d){flt.day=d;renderList();const v=view();if(v.length)show(v[0])
 function stats(v){const a=v.map(i=>trades[i]),nt=a.map(net),W=nt.filter(x=>x>0),L=nt.filter(x=>x<0),sm=x=>x.reduce((p,q)=>p+q,0),bd={},bt={},bs={},bh={},nyH=t=>{const o=off('America/New_York',t.et*1000);return new Date((t.et+o)*1000).getUTCHours()};
  a.forEach(t=>{const z=+t.size||1,hr=nyH(t);for(const [M,k] of [[bd,t.day],[bt,bucket(t)],[bs,z],[bh,hr+'|'+z]]){const o=M[k]??={n:0,w:0,s:0};o.n++;o.s+=net(t);if(net(t)>0){o.w++;o.sw=(o.sw||0)+net(t)}else if(net(t)<0){o.l=(o.l||0)+1;o.sl=(o.sl||0)+net(t)}}});
  return {n:a.length,net:sm(nt),wr:a.length?W.length/a.length:0,aw:W.length?sm(W)/W.length:0,al:L.length?sm(L)/L.length:0,pf:L.length?sm(W)/Math.abs(sm(L)):NaN,byDay:bd,byT:bt,bySize:bs,byHS:bh}}
-let reviews={},jrInit=false;const jrOpen=new Set(),med=a=>{if(!a.length)return 0;const q=[...a].sort((x,y)=>x-y),m=q.length>>1;return q.length%2?q[m]:(q[m-1]+q[m])/2},dayTrades=d=>trades.filter(t=>t.day==d).sort((a,b)=>a.et-b.et);
+let reviews={},jrInit=false,jrRange='auto';const jrOpen=new Set(),med=a=>{if(!a.length)return 0;const q=[...a].sort((x,y)=>x-y),m=q.length>>1;return q.length%2?q[m]:(q[m-1]+q[m])/2},dayTrades=d=>trades.filter(t=>t.day==d).sort((a,b)=>a.et-b.et);
 function nyStr(sec){const o=off('America/New_York',sec*1000),d=new Date((sec+o)*1000);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')}
 function analyzeDay(d){const T=dayTrades(d),n=T.length;if(!n)return null;
  const P=T.map(net),sz=T.map(t=>+t.size||1),sm=x=>x.reduce((p,q)=>p+q,0),avg=x=>x.length?sm(x)/x.length:0,W=P.filter(x=>x>0),Lo=P.filter(x=>x<0),gw=sm(W),gl=sm(Lo),aW=avg(W),aL=avg(Lo),
@@ -639,6 +639,10 @@ async function syncReviews(){try{const r=await(await fetch('/api/review_all',{me
   if(!reviews[d]||core(o)!=core(nw)){nw.gen=Date.now();reviews[d]=nw;await fetch('/api/review_save',{method:'POST',body:JSON.stringify({csv:csvName,day:d,review:nw})})}}
  if($('jr').style.display=='block')renderJournal();else if(curView=='dash')renderDash(true)}catch(e){}}
 const saveRev=d=>fetch('/api/review_save',{method:'POST',body:JSON.stringify({csv:csvName,day:d,review:reviews[d]})});
+function setJrRange(v){jrRange=v;renderJournal()}
+function dayPng(d){const svg=document.querySelector('#dc-'+d+' svg');if(!svg)return;const w=+svg.dataset.w*2,h=+svg.dataset.h*2,cl=svg.cloneNode(true);cl.setAttribute('width',w);cl.setAttribute('height',h);
+ const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);nS=nR=0;save('day_'+d+'_pnl_by_session.png',c.toDataURL('image/png')).then(()=>st('Saved'+(nR?' (replaced old file)':'')+': '+lastFile)).catch(e=>{st(e.message,1);toast(e.message)})};
+ img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(cl))}
 function toggleJ(d,o){o?jrOpen.add(d):jrOpen.delete(d)}
 async function saveMine(d){const e=$('jm-'+d);if(!e||!reviews[d])return;reviews[d].mine=e.value;await saveRev(d)}
 async function resetRev(d){if(!confirm('Reset the log for '+dlab(d)+'? This clears its AI review and your reflection, then rebuilds the numbers from your trades.'))return;await fetch('/api/review_del',{method:'POST',body:JSON.stringify({csv:csvName,day:d})});delete reviews[d];await syncReviews();renderJournal()}
@@ -664,6 +668,7 @@ async function savePasted(d){const e=$('pr-'+d),t=((e&&e.value)||'').trim(),r=re
  r.ai=t;r.aiFp=r.fp;r.aiAt=Date.now();r.aiModel='Claude chat (pasted by you)';await saveRev(d);jrOpen.add(d);renderJournal();toast('Review saved for '+dlab(d))}
 function jrBody(d,r){const g=(a,b,c)=>`<div class="c2"><span class="mu">${a}</span><b class="${c||''}" style="font-size:17px">${b}</b></div>`,pf=r.pf==null?'-':r.pf.toFixed(2),stale=r.ai&&r.aiFp!=r.fp,pc=r.checks.filter(c=>c.ok).length;
  return `<div class="cg">${g('Net',usd(r.net),r.net>=0?'w':'l')}${g('Win rate',(r.wr*100).toFixed(0)+'%')}${g('Profit factor',pf)}${g('Avg win / avg loss',usd(r.aW)+' / '+usd(r.aL))}${g('Best / worst trade',usd(r.best)+' / '+usd(r.worst))}${g('Max drawdown in the day',usd(-r.dd),'l')}${g('Longest losing streak',r.mr)}${g('Size avg / max',r.avgSz.toFixed(1)+' / '+r.maxSz)}</div>
+ <div class="c2" id="dc-${d}" style="margin:12px 0;padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><b>${dlab(d)}: P&amp;L through the day, by session</b><button onclick="dayPng('${d}')">Save this chart as PNG</button></div><div style="max-width:1100px">${sessionSvg(dayTrades(d),{rg:jrRange,lay:'stack',dots:true,dsel:d,cmpct:true})}</div></div>
  <div class="mu" style="margin:6px 0">Discipline checks: ${pc} of ${r.checks.length} passed</div>${r.checks.map(c=>`<div class="ck"><b class="${c.ok?'w':'l'}">${c.ok?'PASS':'CHECK'}</b><span style="flex:1">${esc(c.label)}<br><span class="mu">${esc(c.detail)}</span></span></div>`).join('')}
  ${r.ins.length?`<div class="mu" style="margin:12px 0 4px">Observations</div><ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">${r.ins.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
  <div class="c2" style="padding:0;margin-top:12px;overflow-x:auto"><table class="tb"><tr><th>Session (NY)</th><th>Trades</th><th>Win rate</th><th>Profit factor</th><th>Net</th></tr>${TB.filter(b=>r.sess[b].n).map(b=>{const q=r.sess[b];return `<tr><td>${b}</td><td>${q.n}</td><td>${(q.w/q.n*100).toFixed(0)}%</td><td>${pfS(q)}</td><td class="${q.s>=0?'w':'l'}">${usd(q.s)}</td></tr>`}).join('')}</table></div>
@@ -675,7 +680,7 @@ function jrBody(d,r){const g=(a,b,c)=>`<div class="c2"><span class="mu">${a}</sp
  <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button onclick="copyPacket('${d}')">Copy day for Claude</button><button onclick="savePasted('${d}')">Save pasted review</button></div><div id="cpm-${d}" class="mu" style="margin-top:8px"></div></div>`}
 function renderJournal(){const ds=Object.keys(reviews).sort().reverse();if(!ds.length){$('jr').innerHTML='<div class="mu" style="padding:12px">Load a trade CSV first. A log is created automatically for each trading day.</div>';return}
  if(!jrInit){jrOpen.add(ds[0]);jrInit=true}
- $('jr').innerHTML=`<h2 style="margin:0">Daily log</h2><div class="mu" style="margin:4px 0 12px">${ds.length} trading days | total net ${usd(ds.reduce((a,d)=>a+reviews[d].net,0))} | created automatically from your uploads and saved online | <b style="color:${aiOn&&aiOn.key?'#26a69a':'#ef5350'}">AI review: ${aiOn==null?'checking...':aiOn.key?'ready':'not set up (add ANTHROPIC_API_KEY in Render, Environment)'}</b></div>${jrStrip(ds)}`+
+ $('jr').innerHTML=`<h2 style="margin:0">Daily log</h2><div class="mu" style="margin:4px 0 12px">${ds.length} trading days | total net ${usd(ds.reduce((a,d)=>a+reviews[d].net,0))} | created automatically from your uploads and saved online | <b style="color:${aiOn&&aiOn.key?'#26a69a':'#ef5350'}">AI review: ${aiOn==null?'checking...':aiOn.key?'ready':'not set up (add ANTHROPIC_API_KEY in Render, Environment)'}</b></div>${jrStrip(ds)}<div style="display:flex;gap:8px;align-items:center;margin:0 0 12px;flex-wrap:wrap"><span class="mu">Day chart range:</span><span class="chip ${jrRange=='auto'?'on':''}" onclick="setJrRange('auto')">Zoom to my trades</span><span class="chip ${jrRange=='full'?'on':''}" onclick="setJrRange('full')">Full trading day</span></div>`+
  ds.map(d=>{const r=reviews[d],pc=r.checks.filter(c=>c.ok).length;return `<details class="rv" id="jd-${d}" ${jrOpen.has(d)?'open':''} ontoggle="toggleJ('${d}',this.open)"><summary><b style="min-width:150px">${dlab(d)}</b><b class="${r.net>=0?'w':'l'}" style="min-width:90px;font-size:16px">${usd(r.net)}</b>${spark(d)}<span class="mu">${r.n} trades | ${r.w}W ${r.l}L | ${Math.round(r.avgSz*r.n)} contracts | win ${(r.wr*100).toFixed(0)}% | PF ${r.pf==null?'-':r.pf.toFixed(2)} | checks ${pc}/${r.checks.length}</span>${r.ai?'<span class="chip on">AI review</span>':''}${r.mine?'<span class="chip">my note</span>':''}</summary><div class="rb">${jrBody(d,r)}</div></details>`}).join('')}
 async function showJournal(){syncNote();setView('daily');$('jr').innerHTML='<div class="mu" style="padding:12px">Building the daily log...</div>';await syncReviews();renderJournal();try{aiOn=await(await fetch('/api/ai_status',{method:'POST',body:'{}'})).json();renderJournal()}catch(e){}st('Daily log | one entry per trading day, saved online')}
 let cmp={data:null,sel:null,range:'all',loading:false,err:''};
@@ -795,11 +800,13 @@ const pfS=x=>x.sl<0?(x.sw/-x.sl).toFixed(2):(x.sw>0?'inf':'-');
 function etPos(sec){const o=off('America/New_York',sec*1000),d=new Date((sec+o)*1000),m=d.getUTCHours()*60+d.getUTCMinutes()+d.getUTCSeconds()/60;return m>=1080?m-1080:m>=1020?1380:m+360}
 function renderSession(){const box=$('scbox');if(!box)return;const dsel=$('scd').value||'all',rg=$('scr').value||'auto',lay=$('scl').value||'stack',dots=$('scdot').checked!==false;scSel={d:dsel,r:rg,l:lay,dot:dots};
  let a=view().map(i=>trades[i]);if(dsel!='all')a=a.filter(t=>t.day==dsel);
- if(!a.length){box.innerHTML='<div class="mu" style="padding:12px">No trades for this selection.</div>';return}
+ box.innerHTML=sessionSvg(a,{rg,lay,dots,dsel})}
+function sessionSvg(a,{rg,lay,dots,dsel,cmpct}){
+ if(!a.length)return '<div class="mu" style="padding:12px">No trades for this selection.</div>';
  const dsp=$('disptz').value,tzn=dsp=='Asia/Kolkata'?'IST':dsp.split('/').pop(),rowsT=[...new Map(a.map(t=>{const ms=t.et*1000,no=off('America/New_York',ms);return [no,Math.round((off(dsp,ms)-no)/60)]})).entries()].sort((p,q)=>q[0]-p[0]),xr=16*(rowsT.length-1);
  const nd=new Set(a.map(t=>t.day)).size,ps=a.flatMap(t=>[etPos(t.et),etPos(t.xt)]);let T0=0,T1=1380;
  if(rg=='us')T0=930;else if(rg=='auto'){T0=Math.max(0,Math.floor((Math.min(...ps)-20)/30)*30);T1=Math.min(1380,Math.ceil((Math.max(...ps)+20)/30)*30);if(T1-T0<120){T1=Math.min(1380,T0+120);T0=Math.max(0,T1-120)}}
- const stk=lay=='stack',W=1100,L=72,R=stk?24:64,PW=W-L-R,TP=56,PH=stk?240:300,SH=stk?110:PH,py0=TP,sy0=stk?TP+PH+34:TP,bot=sy0+SH,H=bot+150+xr,f=n=>n.toFixed(1),X=p=>L+(Math.min(Math.max(p,T0),T1)-T0)/(T1-T0)*PW,ev=[],sev=[];
+ const stk=lay=='stack',W=1100,L=72,R=stk?24:64,PW=W-L-R,TP=56,PH=stk?(cmpct?190:240):300,SH=stk?(cmpct?80:110):PH,py0=TP,sy0=stk?TP+PH+34:TP,bot=sy0+SH,H=bot+150+xr,f=n=>n.toFixed(1),X=p=>L+(Math.min(Math.max(p,T0),T1)-T0)/(T1-T0)*PW,ev=[],sev=[];
  a.forEach(t=>{const z=(+t.size||1)/nd;ev.push([etPos(t.xt),net(t),t]);sev.push([etPos(t.et),z],[etPos(t.xt),-z])});ev.sort((p,q)=>p[0]-q[0]);sev.sort((p,q)=>p[0]-q[0]);
  const steps=E=>{let v=0;const pts=[];for(const e of E){v+=e[1];if(e[0]<T0){pts.length=0;pts.push([T0,v])}else{if(!pts.length)pts.push([T0,0]);pts.push([e[0],v])}}if(!pts.length)pts.push([T0,0]);return pts},
   cp=steps(ev),sp=steps(sev),vals=cp.map(p=>p[1]).concat(0),mn0=Math.min(...vals),mx0=Math.max(...vals),rg_=(mx0-mn0||1),mn=mn0-rg_*.08,mx=mx0+rg_*.28,
@@ -827,7 +834,7 @@ function renderSession(){const box=$('scbox');if(!box)return;const dsel=$('scd')
  const cw=(W-40)/4,ly=bot+62+xr;
  SBD.slice().sort((p,q)=>p[1]-q[1]).forEach(([nm],i)=>{const q=D[nm],x0=20+i*cw,wr=q.n?(q.w/q.n*100).toFixed(0)+'%':'-';
   g+=`<rect x="${f(x0)}" y="${ly}" width="12" height="12" fill="rgba(${col(q)},.75)"/>`+tx(x0+18,ly+11,nm,'font-weight="bold" fill="#fff"')+tx(x0,ly+34,`Win rate ${wr} | Profit factor ${pfS(q)}`)+tx(x0,ly+52,`Net ${usd(q.s)} | ${q.n} trade${q.n==1?'':'s'}`)+tx(x0,ly+70,`Avg size ${q.n?(q.z/q.n).toFixed(1):'-'} contracts`,'fill="#8b93a7"')});
- box.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" font-family="Segoe UI,Arial,sans-serif" data-w="${W}" data-h="${H}">${g}</svg>`}
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" font-family="Segoe UI,Arial,sans-serif" data-w="${W}" data-h="${H}">${g}</svg>`}
 function scPng(){const svg=$('scbox').querySelector('svg');if(!svg)return;const w=+svg.dataset.w*2,h=+svg.dataset.h*2,cl=svg.cloneNode(true);cl.setAttribute('width',w);cl.setAttribute('height',h);
  const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);nS=nR=0;save('session_chart.png',c.toDataURL('image/png')).then(()=>st('Saved'+(nR?' (replaced old file)':'')+': '+lastFile)).catch(e=>st(e.message,1))};
  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(cl))}
@@ -941,7 +948,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v26 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v27 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
