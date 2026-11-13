@@ -407,7 +407,7 @@ class H(BaseHTTPRequestHandler):
         self.send(code, json.dumps(out).encode(), "application/json")
 
 
-PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v25</title>
+PAGE = r"""<!doctype html><html><head><meta charset="utf-8"><title>MNQ Trade Charts v26</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{margin:0;font:14px system-ui,sans-serif;background:#0b0d11;color:#dde1ea}
@@ -424,6 +424,7 @@ main{display:flex;height:calc(100vh - 78px)}
 #bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 #list .dh{padding:8px 12px;background:#10151f;color:#aab2c5;font-size:12px;border-bottom:1px solid #232938;position:sticky;top:0}
 #chart{overflow:hidden;width:100%}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}.chip.off{background:#0f1218}
 header#top{display:flex;align-items:center;gap:18px;padding:0 20px;height:60px;background:linear-gradient(90deg,#141821,#181d2e);border-bottom:1px solid #232938;position:sticky;top:0;z-index:40}
 .brand{display:flex;align-items:center;gap:10px;font-size:16px}#nav{display:flex;gap:6px}
 #nav button{white-space:nowrap;background:transparent;border:0;color:#9aa3b8;padding:9px 16px;border-radius:999px;font-weight:600;transition:all .15s}#nav button:hover{color:#fff;background:#1c2233}
@@ -465,11 +466,11 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 </style></head><body>
 <header id="top">
 <div class="brand"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#2b2f4a"/><path d="M7 17l4-5 3 3 5-7" fill="none" stroke="#8f86ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>MNQ Journal</b></div>
-<nav id="nav"><button data-v="dash" onclick="showDash()">Dashboard</button><button data-v="daily" onclick="showJournal()">Daily log</button><button data-v="trades" onclick="showTrades()">Trades &amp; chart</button><button data-v="summary" onclick="showSummary()">Summary</button></nav>
+<nav id="nav"><button data-v="dash" onclick="showDash()">Dashboard</button><button data-v="daily" onclick="showJournal()">Daily log</button><button data-v="accts" onclick="showAccts()">Accounts</button><button data-v="trades" onclick="showTrades()">Trades &amp; chart</button><button data-v="summary" onclick="showSummary()">Summary</button></nav>
 <div class="topr"><div style="position:relative"><button id="slogb" type="button">Saved logs &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:50;top:100%;right:0;margin-top:6px;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:8px"></div></div>
 <label class="btn">Upload CSV<input id="f" type="file" accept=".csv" hidden></label>
 <button id="setb" type="button" onclick="toggleSet()">&#9881; Settings</button>
-<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v25</div></div>
+<a id="lo" href="/logout" style="display:none;color:#9aa3b8;font-size:12px">Log out</a><div id="ver">v26</div></div>
 </header>
 <div id="setp">
 <label>TopstepX username<input id="u" autocomplete="off"></label>
@@ -482,7 +483,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <button type="button" onclick="testTS()">Test TopstepX connection</button><div id="tsres" class="mu" style="line-height:1.5"></div>
 </div>
 <main><div id="left"><div id="flt"></div><div id="list"><div class="it">Enter login, then choose your CSV.</div></div></div>
-<div id="right"><div id="bar"></div><div id="st"></div><div id="dash"></div><div id="chart" style="display:none"></div><div id="det" style="display:none"></div><div id="note" style="display:none"></div><div id="sum" style="display:none"></div><div id="jr" style="display:none"></div></div></main><div id="toast"></div>
+<div id="right"><div id="bar"></div><div id="st"></div><div id="dash"></div><div id="chart" style="display:none"></div><div id="det" style="display:none"></div><div id="note" style="display:none"></div><div id="sum" style="display:none"></div><div id="jr" style="display:none"></div><div id="ac" style="display:none"></div></div></main><div id="toast"></div>
 <script>
 const CLOUD=__CLOUD__;
 const $=id=>document.getElementById(id);
@@ -677,9 +678,54 @@ function renderJournal(){const ds=Object.keys(reviews).sort().reverse();if(!ds.l
  $('jr').innerHTML=`<h2 style="margin:0">Daily log</h2><div class="mu" style="margin:4px 0 12px">${ds.length} trading days | total net ${usd(ds.reduce((a,d)=>a+reviews[d].net,0))} | created automatically from your uploads and saved online | <b style="color:${aiOn&&aiOn.key?'#26a69a':'#ef5350'}">AI review: ${aiOn==null?'checking...':aiOn.key?'ready':'not set up (add ANTHROPIC_API_KEY in Render, Environment)'}</b></div>${jrStrip(ds)}`+
  ds.map(d=>{const r=reviews[d],pc=r.checks.filter(c=>c.ok).length;return `<details class="rv" id="jd-${d}" ${jrOpen.has(d)?'open':''} ontoggle="toggleJ('${d}',this.open)"><summary><b style="min-width:150px">${dlab(d)}</b><b class="${r.net>=0?'w':'l'}" style="min-width:90px;font-size:16px">${usd(r.net)}</b>${spark(d)}<span class="mu">${r.n} trades | ${r.w}W ${r.l}L | ${Math.round(r.avgSz*r.n)} contracts | win ${(r.wr*100).toFixed(0)}% | PF ${r.pf==null?'-':r.pf.toFixed(2)} | checks ${pc}/${r.checks.length}</span>${r.ai?'<span class="chip on">AI review</span>':''}${r.mine?'<span class="chip">my note</span>':''}</summary><div class="rb">${jrBody(d,r)}</div></details>`}).join('')}
 async function showJournal(){syncNote();setView('daily');$('jr').innerHTML='<div class="mu" style="padding:12px">Building the daily log...</div>';await syncReviews();renderJournal();try{aiOn=await(await fetch('/api/ai_status',{method:'POST',body:'{}'})).json();renderJournal()}catch(e){}st('Daily log | one entry per trading day, saved online')}
+let cmp={data:null,sel:null,range:'all',loading:false,err:''};
+const ACC_COL=['#4c8dff','#ffb74d','#26a69a','#ef5350','#b388ff','#4dd0e1','#f06292','#aed581'],SES=[['Overnight','Asia/London','Overnight / Asia / London'],['NY open','','NY open'],['Midday','','Midday'],['NY afternoon','','NY afternoon'],['All day','','All day']];
+function parseOnly(text){const sv=[trades,days,tznote,cache],tz=$('logtz').value;let out=null;try{load(text);out=trades}catch(e){out=null}finally{[trades,days,tznote,cache]=sv;$('logtz').value=tz}return out}
+function acctNames(){return Object.keys(cmp.data||{}).sort()}
+const accCol=n=>ACC_COL[acctNames().indexOf(n)%ACC_COL.length];
+async function loadAccts(){if(!cmp.data){cmp.loading=true;renderAccts()}
+ try{await loadLogs();const raw={};await Promise.all(logNames.map(async n=>{const r=await(await fetch('/api/log_get',{method:'POST',body:JSON.stringify({name:n})})).json();if(r.csv)raw[n]=r.csv}));
+  const data={};for(const n of Object.keys(raw)){const t=parseOnly(raw[n]);if(t&&t.length)data[n]=t}
+  cmp.data=data;cmp.err='';if(!cmp.sel){try{cmp.sel=JSON.parse(localStorage.cmpSel||'null')}catch(e){}}
+  cmp.sel=(cmp.sel||Object.keys(data)).filter(n=>data[n]);if(!cmp.sel.length)cmp.sel=Object.keys(data)}catch(e){cmp.err=e.message}
+ cmp.loading=false;renderAccts()}
+function showAccts(){setView('accts');if(cmp.data)renderAccts();loadAccts();st('')}
+function togAcct(i){const n=acctNames()[i],k=cmp.sel.indexOf(n);k>=0?cmp.sel.splice(k,1):cmp.sel.push(n);try{localStorage.cmpSel=JSON.stringify(cmp.sel)}catch(e){}renderAccts()}
+function setAcctSel(all){cmp.sel=all?acctNames():[];try{localStorage.cmpSel=JSON.stringify(cmp.sel)}catch(e){}renderAccts()}
+function setCmpRange(v){cmp.range=v;renderAccts()}
+function acctStats(trs,keep){const o={};SES.forEach(x=>o[x[2]]={n:0,w:0,l:0,sw:0,sl:0,s:0});trs.forEach(t=>{if(!keep.has(t.day))return;const v=net(t);for(const b of [bucket(t),'All day']){const x=o[b];x.n++;x.s+=v;if(v>0){x.w++;x.sw+=v}else if(v<0){x.l++;x.sl+=v}}});return o}
+const rrOf=x=>x&&x.w&&x.l?(x.sw/x.w)/(-x.sl/x.l):null;
+function gbars(names,ST,kind){const VW=1100,VH=310,L=56,R=52,T=22,B=62,PW=VW-L-R,PH=VH-T-B,n=names.length,gw=PW/5,bw=Math.min(40,gw*.82/Math.max(1,n)),
+ val=(a,k)=>{const x=ST[a][k];if(!x||!x.n)return null;return kind=='wr'?x.w/x.n*100:rrOf(x)},
+ mx=kind=='wr'?100:(()=>{const rel=names.flatMap(a=>SES.map(s=>{const x=ST[a][s[2]];return x&&x.n>=5?rrOf(x):null})).filter(v=>v!=null),al=names.flatMap(a=>SES.map(s=>rrOf(ST[a][s[2]]))).filter(v=>v!=null);return Math.max(1.5,...(rel.length?rel:al.map(v=>Math.min(v,5))))*1.15})(),Y=v=>T+PH-v/mx*PH,fv=v=>kind=='wr'?v.toFixed(0)+'%':v>=10?v.toFixed(0):v.toFixed(2),ref=kind=='wr'?50:1,
+ stp=kind=='wr'?25:mx<=3?.5:mx<=6?1:Math.ceil(mx/5);let g=`<rect width="${VW}" height="${VH}" fill="none"/>`;
+ for(let v=0;v<=mx+1e-9;v+=stp)g+=`<line x1="${L}" x2="${L+PW}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#1c2230"/><text x="${L-8}" y="${(Y(v)+4).toFixed(1)}" font-size="11" fill="#9aa3b8" text-anchor="end">${kind=='wr'?v+'%':v}</text>`;
+ g+=`<line x1="${L}" x2="${L+PW}" y1="${Y(ref).toFixed(1)}" y2="${Y(ref).toFixed(1)}" stroke="#6b7389" stroke-dasharray="5 4"/><text x="${L+PW+6}" y="${(Y(ref)+4).toFixed(1)}" font-size="11" fill="#9aa3b8">${kind=='wr'?'50%':'RR 1.0'}</text>`;
+ SES.forEach((s,gi)=>{const gx=L+gi*gw,x0=gx+(gw-bw*n)/2;
+  names.forEach((a,ai)=>{const x=ST[a][s[2]],v=val(a,s[2]),bx=x0+ai*bw;if(v==null){g+=`<text x="${(bx+bw/2).toFixed(1)}" y="${(Y(0)-5).toFixed(1)}" font-size="10" fill="#6b7389" text-anchor="middle">-</text>`;return}
+   const h=Math.max(1.5,Math.min(v,mx)/mx*PH),rr=rrOf(x),wr=x.w/x.n,few=x.n<5,tk=kind=='wr'?(rr!=null?100/(1+rr):null):(wr>0?(1-wr)/wr:null),
+    tip=`${a} | ${s[2]}: ${x.n} trades | win rate ${(wr*100).toFixed(0)}% | avg win ${usd(x.w?x.sw/x.w:0)} | avg loss ${usd(x.l?x.sl/x.l:0)} | RR ${rr==null?'-':rr.toFixed(2)} | net ${usd(x.s)}${few?' | fewer than 5 trades, treat with care':''}`;
+   g+=`<g><rect x="${(bx+1.5).toFixed(1)}" y="${(T+PH-h).toFixed(1)}" width="${(bw-3).toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${accCol(a)}" opacity="${few?.38:.92}"/>`+(bw>=22?`<text x="${(bx+bw/2).toFixed(1)}" y="${(Math.min(T+PH-h,tk!=null&&tk<=mx?Y(tk):1e9)-6).toFixed(1)}" font-size="10.5" fill="#dde1ea" text-anchor="middle">${fv(v)}${v>mx?' \u25B2':''}</text>`:'')+
+    (tk!=null&&tk<=mx?`<line x1="${(bx+1.5).toFixed(1)}" x2="${(bx+bw-1.5).toFixed(1)}" y1="${Y(tk).toFixed(1)}" y2="${Y(tk).toFixed(1)}" stroke="#fff" stroke-width="2.2"/>`:'')+`<title>${esc(tip)}</title></g>`});
+  g+=`<text x="${(gx+gw/2).toFixed(1)}" y="${VH-38}" font-size="12" fill="#c3cada" text-anchor="middle">${s[0]}</text>`+(s[1]?`<text x="${(gx+gw/2).toFixed(1)}" y="${VH-23}" font-size="12" fill="#c3cada" text-anchor="middle">${s[1]}</text>`:'')});
+ return `<svg viewBox="0 0 ${VW} ${VH}" width="100%" style="display:block">${g}</svg>`}
+function renderAccts(){const box=$('ac'),all=acctNames();
+ if(cmp.loading){box.innerHTML='<div class="mu" style="padding:16px">Loading your accounts...</div>';return}
+ if(cmp.err){box.innerHTML='<div class="note2">Could not load the accounts: '+esc(cmp.err)+'</div>';return}
+ if(!all.length){box.innerHTML='<div class="cd2" style="text-align:center;padding:50px 20px"><div style="font-size:20px;font-weight:700;margin-bottom:8px">No saved accounts yet</div><div class="mu" style="line-height:1.7">Upload each account\'s trade CSV. Every saved log counts as one account here.<br>Use the pencil in <b>Saved logs</b> to rename a log to its account name.</div></div>';return}
+ const days0=[...new Set(Object.values(cmp.data).flatMap(a=>a.map(t=>t.day)))].sort(),keep=new Set(cmp.range=='all'?days0:days0.slice(-(+cmp.range))),sel=all.filter(n=>cmp.sel.includes(n)),ST={};
+ sel.forEach(n=>ST[n]=acctStats(cmp.data[n],keep));
+ const chips=all.map((n,i)=>{const on=cmp.sel.includes(n),c=accCol(n);return `<span class="chip ${on?'':'off'}" style="${on?`border-color:${c};background:${c}22`:'opacity:.55'}" onclick="togAcct(${i})"><i class="dot" style="background:${c}"></i>${esc(n)} <span class="mu">${cmp.data[n].length}</span></span>`}).join(''),
+  rch=[['all','All time'],['5','Last 5 days'],['10','Last 10 days'],['20','Last 20 days']].map(([v,l])=>`<span class="chip ${String(cmp.range)==v?'on':''}" onclick="setCmpRange('${v}')">${l}</span>`).join('');
+ let tbl='';sel.forEach(a=>SES.forEach(s=>{const x=ST[a][s[2]];if(!x.n)return;const rr=rrOf(x),wr=x.w/x.n;tbl+=`<tr><td><i class="dot" style="background:${accCol(a)}"></i>${esc(a)}</td><td>${s[2]}</td><td>${x.n}${x.n<5?' <span class="mu">(few)</span>':''}</td><td>${(wr*100).toFixed(0)}%</td><td class="w">${usd(x.w?x.sw/x.w:0)}</td><td class="l">${usd(x.l?x.sl/x.l:0)}</td><td>${rr==null?'-':rr.toFixed(2)}</td><td>${rr==null?'-':(100/(1+rr)).toFixed(0)+'%'}</td><td class="${x.s>=0?'w':'l'}"><b>${usd(x.s)}</b></td></tr>`}));
+ box.innerHTML=`<div class="dh2"><div><h2 style="margin:0">Accounts compared</h2><div class="mu" style="margin-top:4px">${all.length} account${all.length>1?'s':''} | ${days0.length} trading days | each saved log is one account</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${rch}</div></div>
+ <div class="cd2" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="margin-right:6px">Accounts on the graphs</b>${chips}<button onclick="setAcctSel(true)">All</button><button onclick="setAcctSel(false)">None</button><button onclick="loadAccts()">Refresh</button></div></div>
+ ${sel.length?`<div class="cd2" style="margin-bottom:14px"><h3>Win rate by session <span class="mu">(white tick = win rate needed to break even at that account's RR; faded bar = fewer than 5 trades)</span></h3>${gbars(sel,ST,'wr')}</div>
+ <div class="cd2" style="margin-bottom:14px"><h3>RR by session <span class="mu">(RR = average win / average loss; white tick = RR needed to break even at that account's win rate; \u25B2 = bar cut off because its RR is far above the rest)</span></h3>${gbars(sel,ST,'rr')}</div>
+ <div class="cd2" style="overflow-x:auto"><h3>The numbers behind the graphs</h3><table class="rt"><tr><th>Account</th><th>Session (NY)</th><th>Trades</th><th>Win rate</th><th>Avg win</th><th>Avg loss</th><th>RR</th><th>Break-even win rate</th><th>Net</th></tr>${tbl}</table></div>`:'<div class="note2">No account is ticked. Click an account name above to show it on the graphs.</div>'}`}
 let dashRange='all',curView='dash',eqD=null;
 function setView(v){curView=v;sumOn=v=='summary';const tr=v=='trades',dp=(id,on,k)=>{$(id).style.display=on?k:'none'};
- dp('dash',v=='dash','block');dp('jr',v=='daily','block');dp('sum',v=='summary','block');dp('chart',tr,'block');dp('det',tr,'grid');dp('note',tr,'flex');dp('left',tr,'flex');dp('bar',tr,'flex');
+ dp('dash',v=='dash','block');dp('jr',v=='daily','block');dp('ac',v=='accts','block');dp('sum',v=='summary','block');dp('chart',tr,'block');dp('det',tr,'grid');dp('note',tr,'flex');dp('left',tr,'flex');dp('bar',tr,'flex');
  if(typeof document!='undefined'&&document.querySelectorAll)document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('act',b.dataset.v==v))}
 function showDash(){flt.day='all';setView('dash');renderDash();st('')}
 function showTrades(){const v=view();if(!v.length){setView('trades');renderList();st(trades.length?'No trades match the filters.':'Load a trade CSV first.',1);return}show(sel>=0&&v.includes(sel)?sel:v[0])}
@@ -895,7 +941,7 @@ if __name__ == "__main__":
     if srv is None:
         raise SystemExit("No free port found. Close all black windows and try again.")
     url = f"http://{HOST}:{port}"
-    print(f"MNQ Trade Charts v25 running at {url}  (close this window to stop)")
+    print(f"MNQ Trade Charts v26 running at {url}  (close this window to stop)")
     print("Pictures are saved in:", ROOT)
     if not os.environ.get("PORT"):
         threading.Timer(1, lambda: webbrowser.open(url)).start()
