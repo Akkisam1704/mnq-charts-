@@ -466,7 +466,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 </style></head><body>
 <header id="top">
 <div class="brand"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#2b2f4a"/><path d="M7 17l4-5 3 3 5-7" fill="none" stroke="#8f86ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>MNQ Journal</b></div>
-<nav id="nav"><button data-v="dash" onclick="showDash()">Dashboard</button><button data-v="daily" onclick="showJournal()">Daily log</button><button data-v="accts" onclick="showAccts()">Accounts</button><button data-v="trades" onclick="showTrades()">Trades &amp; chart</button><button data-v="summary" onclick="showSummary()">Summary</button></nav>
+<nav id="nav"><button data-v="dash" onclick="showDash()">Dashboard</button><button data-v="daily" onclick="showJournal()">Daily log</button><button data-v="accts" onclick="showAccts()">Accounts</button><button data-v="trades" onclick="showTrades()">Trades &amp; chart</button><button data-v="summary" onclick="showSummary()">Summary</button><button data-v="pat" onclick="showPatterns()">Patterns</button></nav>
 <div class="topr"><div style="position:relative"><button id="slogb" type="button">Saved logs &#9662;</button><div id="slogm" style="display:none;position:absolute;z-index:50;top:100%;right:0;margin-top:6px;min-width:320px;max-height:320px;overflow:auto;background:#141821;border:1px solid #2a3142;border-radius:8px"></div></div>
 <label class="btn">Upload CSV<input id="f" type="file" accept=".csv" hidden></label>
 <button id="setb" type="button" onclick="toggleSet()">&#9881; Settings</button>
@@ -483,7 +483,7 @@ input[type=color]{padding:2px;width:46px;height:34px;cursor:pointer}
 <button type="button" onclick="testTS()">Test TopstepX connection</button><div id="tsres" class="mu" style="line-height:1.5"></div>
 </div>
 <main><div id="left"><div id="flt"></div><div id="list"><div class="it">Enter login, then choose your CSV.</div></div></div>
-<div id="right"><div id="bar"></div><div id="st"></div><div id="dash"></div><div id="chart" style="display:none"></div><div id="det" style="display:none"></div><div id="note" style="display:none"></div><div id="sum" style="display:none"></div><div id="jr" style="display:none"></div><div id="ac" style="display:none"></div></div></main><div id="toast"></div>
+<div id="right"><div id="bar"></div><div id="st"></div><div id="dash"></div><div id="chart" style="display:none"></div><div id="det" style="display:none"></div><div id="note" style="display:none"></div><div id="sum" style="display:none"></div><div id="jr" style="display:none"></div><div id="ac" style="display:none"></div><div id="pt" style="display:none"></div></div></main><div id="toast"></div>
 <script>
 const CLOUD=__CLOUD__;
 const $=id=>document.getElementById(id);
@@ -730,7 +730,7 @@ function renderAccts(){const box=$('ac'),all=acctNames();
  <div class="cd2" style="overflow-x:auto"><h3>The numbers behind the graphs</h3><table class="rt"><tr><th>Account</th><th>Session (NY)</th><th>Trades</th><th>Win rate</th><th>Avg win</th><th>Avg loss</th><th>RR</th><th>Break-even win rate</th><th>Net</th></tr>${tbl}</table></div>`:'<div class="note2">No account is ticked. Click an account name above to show it on the graphs.</div>'}`}
 let dashRange='all',curView='dash',eqD=null;
 function setView(v){curView=v;sumOn=v=='summary';const tr=v=='trades',dp=(id,on,k)=>{$(id).style.display=on?k:'none'};
- dp('dash',v=='dash','block');dp('jr',v=='daily','block');dp('ac',v=='accts','block');dp('sum',v=='summary','block');dp('chart',tr,'block');dp('det',tr,'grid');dp('note',tr,'flex');dp('left',tr,'flex');dp('bar',tr,'flex');
+ dp('dash',v=='dash','block');dp('jr',v=='daily','block');dp('ac',v=='accts','block');dp('pt',v=='pat','block');dp('sum',v=='summary','block');dp('chart',tr,'block');dp('det',tr,'grid');dp('note',tr,'flex');dp('left',tr,'flex');dp('bar',tr,'flex');
  if(typeof document!='undefined'&&document.querySelectorAll)document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('act',b.dataset.v==v))}
 function showDash(){flt.day='all';setView('dash');renderDash();st('')}
 function showTrades(){const v=view();if(!v.length){setView('trades');renderList();st(trades.length?'No trades match the filters.':'Load a trade CSV first.',1);return}show(sel>=0&&v.includes(sel)?sel:v[0])}
@@ -930,6 +930,120 @@ if(CLOUD){$('u').parentNode.style.display='none';$('k').parentNode.style.display
 $('f').onchange=e=>{const f=e.target.files[0];if(!f)return;
  if(needLogin()){needKey();e.target.value='';return}
  f.text().then(async x=>{await smartOpen(x,f.name.replace(/\.csv$/i,'')||'trades')})};
+/* ===== PATTERNS TAB (pure price action / candlesticks) ===== */
+const PA={rows:[],busy:0,table:[],sel:-1,cov:{ok:0,gap:0,nobars:0,err:''},n:0,minN:8};
+const pbars={};
+const paLower=(B,m)=>{let lo=0,hi=B.length;while(lo<hi){const mid=(lo+hi)>>1;if(B[mid].time<m)lo=mid+1;else hi=mid}return lo};
+const paSum=a=>a.reduce((p,q)=>p+q,0),paAvg=a=>a.length?paSum(a)/a.length:0;
+
+function paFeat(t,B){
+ const s=t.long?1:-1,m=Math.floor(t.et/60)*60,idx=paLower(B,m);
+ if(idx<32||idx>=B.length)return {skip:'nobars'};
+ if(m-B[idx-1].time>180||B[idx-1].time-B[idx-30].time>2700)return {skip:'gap'};
+ const P=B[idx-1],PP=B[idx-2],atr=paAvg(B.slice(idx-14,idx).map(x=>x.high-x.low));
+ if(!(atr>0))return {skip:'gap'};
+ const ent=t.ep,tags=[],add=(g,l)=>{if(l)tags.push({g,l})},
+  body=x=>Math.abs(x.close-x.open),rg=x=>Math.max(x.high-x.low,1e-9),dir=x=>Math.sign(x.close-x.open),
+  bhi=x=>Math.max(x.open,x.close),blo=x=>Math.min(x.open,x.close);
+ const al=dir(P)*s,bR=body(P)/rg(P),sz=rg(P)/atr;
+ add('Last candle',bR<.25?'Last candle was a doji (indecision)':al>0?'Last candle went WITH my direction':'Last candle went AGAINST my direction');
+ if(bR>=.7&&sz>=1)add('Strength',al>0?'Last candle: strong body with me':'Last candle: strong body against me');
+ add('Size',sz>1.5?'Last candle large (>1.5x ATR)':sz<.5?'Last candle tiny (<0.5x ATR)':null);
+ const upW=P.high-bhi(P),loW=blo(P)-P.low,supW=s>0?loW:upW,advW=s>0?upW:loW;
+ if(supW/rg(P)>=.5)add('Wick','Long wick on MY side (pin bar backing me)');
+ else if(advW/rg(P)>=.5)add('Wick','Long wick AGAINST me (rejection candle)');
+ const d0=dir(P);let k=1;if(d0!==0){while(k<6&&dir(B[idx-1-k])===d0)k++;if(k>=3)add('Run',d0*s>0?'3+ candles in a row WITH me (chasing)':'3+ candles in a row AGAINST me (catching the move)')}
+ if(dir(P)!==0&&dir(P)!==dir(PP)&&body(P)>body(PP)&&bhi(P)>=bhi(PP)&&blo(P)<=blo(PP))add('Engulf',al>0?'Engulfing candle with me':'Engulfing candle against me');
+ if(P.high<=PP.high&&P.low>=PP.low)add('Inside','Inside bar before entry');
+ const W20=B.slice(idx-20,idx),hi20=Math.max(...W20.map(x=>x.high)),lo20=Math.min(...W20.map(x=>x.low)),near=.15*atr;
+ const brk=s>0?ent>=hi20-near:ent<=lo20+near,fade=s>0?ent<=lo20+near:ent>=hi20-near;
+ add('Location',brk?'Entry at 20-candle extreme in my direction (breakout / chase)':fade?'Entry at opposite 20-candle extreme (fade / reversal)':'Entry mid-range');
+ const slope=(P.close-B[idx-31].close)/atr*s;
+ add('Trend',slope>1.5?'With the 30-candle trend':slope<-1.5?'Against the 30-candle trend':'No clear 30-candle trend');
+ const cl=B.slice(Math.max(0,idx-60),idx).map(x=>x.close);let ema=cl[0];for(const c of cl)ema+=(c-ema)*2/21;
+ const ext=(ent-ema)/atr*s;
+ add('EMA20',ext>2?'Extended >2 ATR from EMA20 in my direction':ext<-2?'Extended >2 ATR from EMA20 against me (fade)':ext>0?'Entry on my side of EMA20':'Entry on wrong side of EMA20');
+ const ag3=B.slice(idx-3,idx).filter(x=>dir(x)*s<0).length;
+ if(slope>1.5&&ag3>=2)add('Setup','Pullback inside a trend');
+ const gap=(ent-P.close)*s/atr;
+ add('Fill',gap>.5?'Entered >0.5 ATR beyond last close (chased)':gap<-.5?'Entered >0.5 ATR better than last close (pullback fill)':null);
+ const r5=paAvg(B.slice(idx-5,idx).map(x=>x.high-x.low)),r20=paAvg(W20.map(x=>x.high-x.low));
+ add('Volatility',r5/r20<.6?'Compression before entry (small candles)':r5/r20>1.5?'Expansion before entry (big candles)':null);
+ let xi=paLower(B,Math.floor(t.xt/60)*60);if(xi>=B.length)xi=B.length-1;if(xi<idx)xi=idx;
+ const hold=B.slice(idx,xi+1),A=B.slice(xi+1,xi+16),hiH=Math.max(...hold.map(x=>x.high)),loH=Math.min(...hold.map(x=>x.low));
+ const mfe=Math.max(0,s>0?hiH-ent:ent-loH),mae=Math.max(0,s>0?ent-loH:hiH-ent),pts=(t.xp-t.ep)*s;
+ let after=0,revEntry=false;if(A.length>=5){const aH=Math.max(...A.map(x=>x.high)),aL=Math.min(...A.map(x=>x.low));after=Math.max(0,s>0?aH-t.xp:t.xp-aL);revEntry=s>0?aH>=ent:aL<=ent}
+ return {t,idx,xi,B,atr,tags,pts,mfe,mae,after,revEntry,hasAfter:A.length>=5};
+}
+
+function paStats(rs){const nt=rs.map(r=>net(r.t)),W=nt.filter(x=>x>0),L=nt.filter(x=>x<0),sw=paSum(W),sl=paSum(L);
+ return {n:rs.length,w:W.length,net:paSum(nt),avg:paAvg(nt),pf:sl<0?sw/-sl:null,sw,sl,hold:paAvg(rs.map(r=>(r.t.xt-r.t.et)/60))}}
+
+function paMine(rows){
+ const sorted=rows.slice().sort((a,b)=>a.t.et-b.t.et),half=new Map(sorted.map((r,i)=>[r,i<sorted.length/2?0:1])),map=new Map();
+ const push=(k,r)=>{let e=map.get(k);if(!e){e={k,rs:[]};map.set(k,e)}e.rs.push(r)};
+ for(const r of rows){const T=r.tags;for(let i=0;i<T.length;i++){push(T[i].l,r);for(let j=i+1;j<T.length;j++)if(T[i].g!==T[j].g){const a=T[i].l<T[j].l?[T[i].l,T[j].l]:[T[j].l,T[i].l];push(a[0]+'  +  '+a[1],r)}}}
+ const out=[];
+ for(const e of map.values()){if(e.rs.length<PA.minN||e.rs.length>.7*rows.length)continue;const st=paStats(e.rs),h=[0,1].map(q=>e.rs.filter(r=>half.get(r)===q).map(r=>net(r.t)));
+  const cons=h[0].length>=3&&h[1].length>=3?(Math.sign(paAvg(h[0]))===Math.sign(paAvg(h[1]))&&Math.sign(paAvg(h[0]))===Math.sign(st.avg)):null;
+  const rel=st.n>=25&&cons?'Solid lead':st.n>=12&&cons!==false?'Possible':'Weak';
+  out.push({k:e.k,pair:e.k.includes('  +  '),rs:e.rs,st,cons,rel})}
+ return out}
+
+function paMini(r){const B=r.B,a=Math.max(0,r.idx-16),b=Math.min(B.length-1,r.xi+3),sl=B.slice(a,b+1),W=240,H=120,hi=Math.max(...sl.map(x=>x.high),r.t.ep,r.t.xp),lo=Math.min(...sl.map(x=>x.low),r.t.ep,r.t.xp),
+ Y=v=>5+(hi-v)/((hi-lo)||1)*(H-10),bw=W/sl.length,cx=i=>(i+.5)*bw,up=$('cup').value,dn=$('cdn').value;let g='';
+ sl.forEach((x,i)=>{const c=x.close>=x.open?up:dn,x0=cx(i);g+=`<line x1="${x0.toFixed(1)}" x2="${x0.toFixed(1)}" y1="${Y(x.high).toFixed(1)}" y2="${Y(x.low).toFixed(1)}" stroke="${c}"/><rect x="${(x0-bw*.33).toFixed(1)}" y="${Y(Math.max(x.open,x.close)).toFixed(1)}" width="${(bw*.66).toFixed(1)}" height="${Math.max(1,Math.abs(Y(x.open)-Y(x.close))).toFixed(1)}" fill="${c}"/>`});
+ const ei=r.idx-a,xi=r.xi-a;
+ g+=`<line x1="0" x2="${W}" y1="${Y(r.t.ep).toFixed(1)}" y2="${Y(r.t.ep).toFixed(1)}" stroke="#2196f3" stroke-dasharray="3 3"/><circle cx="${cx(ei).toFixed(1)}" cy="${Y(r.t.ep).toFixed(1)}" r="4.5" fill="#2196f3" stroke="#fff"/><circle cx="${cx(xi).toFixed(1)}" cy="${Y(r.t.xp).toFixed(1)}" r="4.5" fill="#ff9800" stroke="#fff"/>`;
+ return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="background:#0f1115;border-radius:6px">${g}</svg>`}
+
+async function paRun(){
+ if(PA.busy)return;if(needLogin()){needKey();return}
+ PA.busy=1;const box=$('pt'),say=m=>{const e=$('pastat');if(e)e.textContent=m};
+ try{
+  let T;const src=$('pasrc')?$('pasrc').value:'log';PA.src=src;
+  if(src=='all'){say('Loading all saved accounts...');await loadAccts();const seen=new Set();T=[];for(const n of Object.keys(cmp.data||{}))for(const t of cmp.data[n]){const k=[t.et,t.xt,t.ep,t.xp,t.long].join('|');if(seen.has(k))continue;seen.add(k);T.push(t)}}
+  else T=trades.slice();
+  if(!T.length){say('Load a trade CSV first.');PA.busy=0;return}
+  const G=new Map();for(const t of T){const k=(t.sym||'MNQ')+'|'+t.day;if(!G.has(k))G.set(k,[]);G.get(k).push(t)}
+  const keys=[...G.keys()].filter(k=>!pbars[k]);let done=0,errs=0,first='';
+  const work=async()=>{while(keys.length){const k=keys.pop(),L=G.get(k);
+    try{const r=await fetch('/api/bars',{method:'POST',body:JSON.stringify({username:$('u').value.trim(),apiKey:$('k').value.trim(),symbol:L[0].sym,start:Math.min(...L.map(t=>t.et))-5*3600,end:Math.max(...L.map(t=>t.xt))+3600})}),d=await r.json();
+     if(d.error)throw new Error(d.error);pbars[k]=d.bars||[]}catch(e){errs++;first=first||e.message;pbars[k]=[]}
+    done++;say(`Loading candles: ${done} of ${done+keys.length} days${errs?` (${errs} failed)`:''}...`)}};
+  const total=keys.length;await Promise.all([work(),work(),work()]);
+  const rows=[],cov={ok:0,gap:0,nobars:0,err:first};
+  for(const t of T){const B=pbars[(t.sym||'MNQ')+'|'+t.day];if(!B||!B.length){cov.nobars++;continue}const r=paFeat(t,B);if(r.skip){cov[r.skip]++;continue}rows.push(r);cov.ok++}
+  PA.rows=rows;PA.cov=cov;PA.n=T.length;PA.table=paMine(rows);PA.sel=-1;paRender();say('')
+ }catch(e){say('Analysis failed: '+e.message)}
+ PA.busy=0}
+
+function paPick(i){PA.sel=i;paRender();const e=$('pasel');if(e)e.scrollIntoView({behavior:'smooth',block:'start'})}
+function paOpen(i){if(i>=0)show(i)}
+function paTable(list,title,good){
+ const rel=r=>`<span class="chip ${r=='Solid lead'?'on':''}" style="${r=='Weak'?'opacity:.6':''}">${r}</span>`;
+ return `<div class="cd2" style="overflow-x:auto;margin-bottom:14px"><h3>${title}</h3><table class="rt"><tr><th>Pattern (what the candles looked like)</th><th>Trades</th><th>Win %</th><th>Avg $</th><th>Net</th><th>PF</th><th>Avg hold</th><th>Both halves agree</th><th>Reliability</th></tr>`+
+ (list.length?list.map(e=>{const s=e.st,i=PA.table.indexOf(e);return `<tr class="cl" onclick="paPick(${i})"><td style="max-width:520px;white-space:normal">${e.pair?'<span class="mu">combo</span> ':''}${esc(e.k)}</td><td>${s.n}</td><td>${(s.w/s.n*100).toFixed(0)}%</td><td class="${s.avg>=0?'w':'l'}">${usd(s.avg)}</td><td class="${s.net>=0?'w':'l'}"><b>${usd(s.net)}</b></td><td>${s.pf==null?'-':s.pf.toFixed(2)}</td><td>${s.hold.toFixed(1)}m</td><td>${e.cons==null?'-':e.cons?'yes':'no'}</td><td>${rel(e.rel)}</td></tr>`}).join(''):`<tr><td colspan="9" class="mu">Nothing with at least ${PA.minN} trades.</td></tr>`)+'</table></div>'}
+function paRender(){
+ const box=$('pt'),R=PA.rows,bs=R.length?paStats(R):null,c=PA.cov;
+ const head=`<div class="dh2"><div><h2 style="margin:0">Price-action patterns</h2><div class="mu" style="margin-top:4px">Finds the candle patterns before your entries that repeat in your wins and losses. Uses only candles that had closed before you entered.</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="pasrc"><option value="log" ${PA.src!='all'?'selected':''}>This log only</option><option value="all" ${PA.src=='all'?'selected':''}>All saved accounts (duplicates removed)</option></select><button class="on" onclick="paRun()">${R.length?'Re-run':'Analyze'}</button></div></div><div id="pastat" class="mu" style="margin-bottom:10px"></div>`;
+ if(!R.length){box.innerHTML=head+`<div class="cd2 mu" style="padding:30px;line-height:1.7">${PA.n?`No trade had usable candles (${c.nobars} without candle data, ${c.gap} with gaps in the data).${c.err?'<br>First error: '+esc(c.err):''}`:'Click <b>Analyze</b>. It downloads the 1-minute candles around your trades from TopstepX (needs your login in Settings), then ranks the patterns.'}</div>`;return}
+ const good=PA.table.filter(e=>e.st.net>0).sort((a,b)=>b.st.net-a.st.net).slice(0,12),bad=PA.table.filter(e=>e.st.net<0).sort((a,b)=>a.st.net-b.st.net).slice(0,12);
+ const WN=R.filter(r=>net(r.t)>0),LS=R.filter(r=>net(r.t)<0),lw=LS.filter(r=>r.hasAfter),ww=WN.filter(r=>r.hasAfter),
+  rv=lw.length?lw.filter(r=>r.revEntry).length/lw.length:null,left=ww.length?ww.filter(r=>r.after>=Math.abs(r.pts)).length/ww.length:null,
+  avgp=a=>a.length?paAvg(a):0,usedMae=avgp(WN.map(r=>r.mae)),
+  chips=(l,v)=>`<span class="chip2"><span class="mu">${l}</span> <b>${v}</b></span>`;
+ let sel='';
+ if(PA.sel>=0&&PA.table[PA.sel]){const e=PA.table[PA.sel],rs=e.rs.slice().sort((a,b)=>net(b.t)-net(a.t)),pick=[...rs.slice(0,6),...rs.slice(-6)].filter((r,i,a)=>a.indexOf(r)===i).sort((a,b)=>a.t.et-b.t.et);
+  sel=`<div class="cd2" id="pasel" style="margin-bottom:14px;border-color:#4c8dff"><h3>${esc(e.k)} <span class="mu">| ${e.st.n} trades | ${usd(e.st.net)} | blue dot = entry, orange dot = exit | up to 12 examples (best and worst)</span></h3><div style="display:flex;flex-wrap:wrap;gap:12px">`+
+  pick.map(r=>{const ix=trades.indexOf(r.t);return `<div style="width:240px"><div ${ix>=0?`onclick="paOpen(${ix})" style="cursor:pointer"`:''}>${paMini(r)}</div><div class="mu" style="font-size:12px">${fmt(r.t.et)} | ${r.t.long?'LONG':'SHORT'} | <b class="${net(r.t)>=0?'w':'l'}">${usd(net(r.t))}</b>${ix>=0?' | click to open':''}</div></div>`}).join('')+'</div></div>'}
+ box.innerHTML=head+`<div class="strip">${chips('Trades analysed',R.length+' of '+PA.n)}${chips('Win rate',(bs.w/bs.n*100).toFixed(0)+'%')}${chips('Net',usd(bs.net))}${chips('Profit factor',bs.pf==null?'-':bs.pf.toFixed(2))}${c.nobars||c.gap?chips('Skipped',`${c.nobars} no candles, ${c.gap} data gaps`):''}</div>
+ <div class="note2">Reading this: a pattern is only a lead if it has enough trades, a decent profit factor and <b>both halves of your history agree</b>. "Weak" rows are shown so you can see them, not to trade on. Click any row to see the actual candles.</div>
+ ${sel}${paTable(good,'Patterns that made you money',1)}${paTable(bad,'Patterns that lost you money',0)}
+ <div class="cd2" style="margin-bottom:14px"><h3>Entries and exits (from the candles)</h3><div class="strip" style="margin:0">${chips('Avg drawdown on winners',avgp(WN.map(r=>r.mae)).toFixed(1)+' pts')}${chips('Avg drawdown on losers',avgp(LS.map(r=>r.mae)).toFixed(1)+' pts')}${chips('Avg best open profit, winners',avgp(WN.map(r=>r.mfe)).toFixed(1)+' pts')}${chips('Avg best open profit, losers',avgp(LS.map(r=>r.mfe)).toFixed(1)+' pts')}${rv==null?'':chips('Losers where price got back to my entry within 15 min',(rv*100).toFixed(0)+'%')}${left==null?'':chips('Winners where price kept going further than my win',(left*100).toFixed(0)+'%')}</div><div class="mu" style="margin-top:8px;line-height:1.6">A high "got back to my entry" % means stops are often too tight or too early. A high "kept going" % means you are exiting winners early. Losers whose best open profit was large mean you had a winner and let it turn.</div></div>`;
+ if(!PA.busy&&$('pastat'))$('pastat').textContent=''}
+function showPatterns(){syncNote();setView('pat');paRender();st('Patterns | analysis of the candles before your entries')}
+
 loadLogs();setView('dash');renderDash();
 </script></body></html>"""
 
